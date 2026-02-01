@@ -43,3 +43,31 @@ export async function getWorkouts() {
   `;
   return result.rows;
 }
+
+export async function updateWorkout(id: number, workout: {
+  date: string;
+  type: string;
+  duration: number;
+  distance: number;
+  notes: string;
+}) {
+  const { date, type, duration, distance, notes } = workout;
+  const result = await sql`
+    UPDATE workouts 
+    SET date = ${date}, 
+        type = ${type}, 
+        duration = ${duration}, 
+        distance = ${distance}, 
+        notes = ${notes}
+    WHERE id = ${id}
+    RETURNING *
+  `;
+  return result.rows[0];
+}
+
+export async function deleteWorkout(id: number) {
+  await sql`
+    DELETE FROM workouts 
+    WHERE id = ${id}
+  `;
+}
