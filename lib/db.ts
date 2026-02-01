@@ -71,3 +71,41 @@ export async function deleteWorkout(id: number) {
     WHERE id = ${id}
   `;
 }
+
+export async function createFeedbackTable() {
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS feedback (
+        id SERIAL PRIMARY KEY,
+        message TEXT NOT NULL,
+        email VARCHAR(255),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+    console.log('Feedback table created successfully');
+  } catch (error) {
+    console.error('Error creating feedback table:', error);
+    throw error;
+  }
+}
+
+export async function addFeedback(feedback: {
+  message: string;
+  email?: string;
+}) {
+  const { message, email } = feedback;
+  const result = await sql`
+    INSERT INTO feedback (message, email)
+    VALUES (${message}, ${email || null})
+    RETURNING *
+  `;
+  return result.rows[0];
+}
+
+export async function getFeedback() {
+  const result = await sql`
+    SELECT * FROM feedback 
+    ORDER BY created_at DESC
+  `;
+  return result.rows;
+}

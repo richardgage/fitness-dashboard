@@ -54,6 +54,13 @@ export default function RootLayout({
                 >
                   Import
                 </Link>
+                <Link 
+                  href="/feedback" 
+                  className="text-gray-300 hover:text-white transition-colors"
+                >
+                  Feedback
+                </Link>
+
               </div>
             </div>
           </div>
