@@ -173,15 +173,13 @@ CREATE TABLE feedback (
 - [ ] Detailed gym session tracking (sets/reps/weight)
 - [ ] Social features (share workouts, compare with friends)
 
-## Screenshots
-
-*(Add screenshots of your dashboard, workouts page, etc.)*
 
 ## Author
 
 **Richard Gage**
 - Computer Science Graduate, University of Victoria (2025)
-- GitHub: [@YOUR_USERNAME](https://github.com/YOUR_USERNAME)
+- Philosophy Graduate
+- GitHub: [richardgage](https://github.com/richardgage)
 
 ## License
 
