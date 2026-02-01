@@ -32,7 +32,7 @@ export async function POST(request: Request) {
         const values = line.split(',').map((v: string) => v.trim());
         const workout: any = {};
         
-        headers.forEach((header, index) => {
+        headers.forEach((header: string,index: number) => {
           workout[header] = values[index] || '';
         });
         
