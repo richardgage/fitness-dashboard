@@ -2,7 +2,7 @@
 
 A full-stack web application for tracking workouts, analyzing training data, and monitoring fitness progress. Built with Next.js, React, TypeScript, and PostgreSQL.
 
-🔗 **Live Demo**: [your-vercel-url.vercel.app](https://your-vercel-url.vercel.app)
+🔗 **Live Demo**: [fitness-dashboard-pearl.vercel.app](https://fitness-dashboard-pearl.vercel.app)
 
 ## Features
 
