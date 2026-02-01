@@ -117,7 +117,7 @@ export default function Workouts() {
         {/* Workout Form */}
         <div className="bg-gray-800 p-6 rounded-lg mb-8">
           <h2 className="text-2xl font-bold text-white mb-4">
-            {editingId ? 'Edit Workout' : 'Log Workout'}
+            {editingId ? 'Edit Workout' : 'Add a Workout'}
           </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
