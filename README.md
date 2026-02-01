@@ -1,36 +1,99 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Fitness Training Dashboard
+
+A full-stack web application for tracking workouts and monitoring training progress. Built with Next.js, React, TypeScript, and PostgreSQL.
+
+## Features
+
+- **Workout Logging** - Record workouts with date, type, duration, distance, and notes
+- **Dashboard Analytics** - View training statistics and visualizations
+- **CSV Import** - Bulk upload workout history from CSV files
+- **CRUD Operations** - Create, read, update, and delete workouts
+- **Data Visualization** - Charts showing workout distribution and weekly activity trends
+
+## Tech Stack
+
+- **Frontend**: Next.js 15, React, TypeScript, Tailwind CSS
+- **Backend**: Next.js API Routes
+- **Database**: PostgreSQL (Neon)
+- **Charts**: Recharts
+- **Deployment**: Vercel
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
+- Node.js 18+ installed
+- PostgreSQL database (or Neon account)
+
+### Installation
+
+1. Clone the repository
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/YOUR_USERNAME/fitness-dashboard.git
+cd fitness-dashboard
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Install dependencies
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Set up environment variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Create a `.env.local` file in the root directory with your database credentials:
+```
+DATABASE_URL="your_postgres_connection_string"
+```
 
-## Learn More
+4. Initialize the database
+```bash
+# Run the app and visit http://localhost:3000/api/init-db
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+5. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Usage
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Logging Workouts
+Navigate to the Workouts page to manually log individual training sessions.
 
-## Deploy on Vercel
+### Importing Data
+Use the Import page to bulk upload workout history from a CSV file. Download the template for the correct format.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Viewing Analytics
+The Dashboard displays summary statistics and visualizations of your training data.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Project Structure
+```
+fitness-dashboard/
+├── src/
+│   ├── app/
+│   │   ├── api/          # API routes
+│   │   ├── dashboard/    # Dashboard page
+│   │   ├── import/       # CSV import page
+│   │   ├── workouts/     # Workout logging page
+│   │   └── layout.tsx    # Root layout with navigation
+│   └── lib/
+│       └── db.ts         # Database utility functions
+├── public/               # Static assets
+└── package.json
+```
+
+## Future Enhancements
+
+- [ ] Garmin API integration for automatic workout sync
+- [ ] Heart rate zone tracking and analysis
+- [ ] Training load calculations
+- [ ] User authentication and multi-user support
+- [ ] Mobile responsive design improvements
+- [ ] Export data to CSV/PDF reports
+
+## Author
+
+**Richard Gage** - Recent Computer Science graduate from University of Victoria
+
+
+## License
+
+This project is open source and available under the MIT License.
