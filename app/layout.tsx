@@ -49,22 +49,22 @@ export default function RootLayout({
                   Gym
                 </Link>
                 <Link 
-        href="/run" 
-    className="text-gray-300 hover:text-white transition-colors"
-  >
-    Run
-  </Link>
-  <Link 
-    href="/cycle" 
-    className="text-gray-300 hover:text-white transition-colors"
-  >
-    Cycle
-  </Link>
-                <Link 
-                  href="/workouts" 
+                  href="/run" 
                   className="text-gray-300 hover:text-white transition-colors"
                 >
-                  Workouts
+                  Run
+                </Link>
+                <Link 
+                  href="/cycle" 
+                  className="text-gray-300 hover:text-white transition-colors"
+                >
+                  Cycle
+                </Link>
+                <Link 
+                  href="/swim" 
+                  className="text-gray-300 hover:text-white transition-colors"
+                >
+                  Swim
                 </Link>
                 <Link 
                   href="/import" 
