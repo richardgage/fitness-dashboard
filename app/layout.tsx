@@ -43,6 +43,12 @@ export default function RootLayout({
                   Dashboard
                 </Link>
                 <Link 
+                  href="/gym" 
+                  className="text-gray-300 hover:text-white transition-colors"
+                >
+                  Gym
+                </Link>
+                <Link 
                   href="/workouts" 
                   className="text-gray-300 hover:text-white transition-colors"
                 >
