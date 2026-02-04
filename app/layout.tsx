@@ -43,7 +43,7 @@ export default function RootLayout({
                   Dashboard
                 </Link>
                 <Link 
-                  href="/gym" 
+                  href="/gym/history" 
                   className="text-gray-300 hover:text-white transition-colors"
                 >
                   Gym

@@ -155,7 +155,7 @@ export default function GymWorkout() {
 
   const endWorkout = async () => {
     if (!confirm('End this workout?')) return
-
+  
     try {
       await fetch('/api/gym', {
         method: 'PUT',
@@ -165,11 +165,11 @@ export default function GymWorkout() {
           notes: workoutNotes
         })
       })
-      setActiveSession(null)
-      setCurrentExercise(null)
-      setSelectedExerciseName('')
-      setWorkoutNotes('')
+      
       alert('Workout completed! 🎉')
+      
+      // Redirect to history page
+      window.location.href = '/gym/history'
     } catch (error) {
       console.error('Error ending workout:', error)
     }
