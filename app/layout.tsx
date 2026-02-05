@@ -39,33 +39,13 @@ export default function RootLayout({
                 <Link 
                   href="/dashboard" 
                   className="text-gray-300 hover:text-white transition-colors"
-                >
-                  Dashboard
-                </Link>
+                > Dashboard </Link>
                 <Link 
                   href="/gym/history" 
                   className="text-gray-300 hover:text-white transition-colors"
                 >
                   Gym
-                </Link>
-                <Link 
-                  href="/run" 
-                  className="text-gray-300 hover:text-white transition-colors"
-                >
-                  Run
-                </Link>
-                <Link 
-                  href="/cycle" 
-                  className="text-gray-300 hover:text-white transition-colors"
-                >
-                  Cycle
-                </Link>
-                <Link 
-                  href="/swim" 
-                  className="text-gray-300 hover:text-white transition-colors"
-                >
-                  Swim
-                </Link>
+                </Link>             
                 <Link 
                   href="/import" 
                   className="text-gray-300 hover:text-white transition-colors"
