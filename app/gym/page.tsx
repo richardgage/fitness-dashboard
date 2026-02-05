@@ -30,7 +30,7 @@ export default function GymWorkout() {
   const [workoutNotes, setWorkoutNotes] = useState('')
   
   // Rest timer state
-  const [restTimeSeconds, setRestTimeSeconds] = useState(90) // Default 90 seconds
+  const [restTimeSeconds, setRestTimeSeconds] = useState(90)
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null)
   const [isResting, setIsResting] = useState(false)
 
@@ -48,7 +48,6 @@ export default function GymWorkout() {
     const interval = setInterval(() => {
       setTimeRemaining(prev => {
         if (prev === null || prev <= 1) {
-          // Timer finished
           playSound()
           setIsResting(false)
           return null
@@ -61,7 +60,6 @@ export default function GymWorkout() {
   }, [timeRemaining])
 
   const playSound = () => {
-    // Play a beep sound when timer finishes
     if (typeof window !== 'undefined' && 'AudioContext' in window) {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
       const oscillator = audioContext.createOscillator()
@@ -121,7 +119,6 @@ export default function GymWorkout() {
   const selectExercise = async (exerciseName: string) => {
     if (!exerciseName) return
 
-    // Check if exercise already exists in current session
     const existingExercise = activeSession?.exercises?.find(
       (e: any) => e.exercise_name === exerciseName
     )
@@ -130,7 +127,6 @@ export default function GymWorkout() {
       setCurrentExercise(existingExercise)
       setSelectedExerciseName(exerciseName)
     } else {
-      // Add new exercise
       try {
         const order = (activeSession?.exercises?.length || 0) + 1
         const response = await fetch('/api/gym', {
@@ -157,7 +153,6 @@ export default function GymWorkout() {
       }
     }
 
-    // Fetch last workout for this exercise
     fetchLastWorkout(exerciseName)
   }
 
@@ -190,14 +185,12 @@ export default function GymWorkout() {
       })
       const newSet = await response.json()
 
-      // Update current exercise with new set
       const updatedExercise = {
         ...currentExercise,
         sets: [...(currentExercise.sets || []), newSet]
       }
       setCurrentExercise(updatedExercise)
 
-      // Update active session
       const updatedExercises = activeSession.exercises.map((e: any) =>
         e.id === currentExercise.id ? updatedExercise : e
       )
@@ -212,6 +205,15 @@ export default function GymWorkout() {
     } catch (error) {
       console.error('Error adding set:', error)
     }
+  }
+
+  const switchExercise = () => {
+    setCurrentExercise(null)
+    setSelectedExerciseName('')
+    setWeight('')
+    setReps('')
+    setLastWorkout(null)
+    skipRest() // Stop rest timer if running
   }
 
   const endWorkout = async () => {
@@ -270,6 +272,7 @@ export default function GymWorkout() {
   return (
     <div className="min-h-screen bg-gray-900 p-8">
       <div className="max-w-4xl mx-auto">
+        {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-4xl font-bold text-white">🏋️ Workout in Progress</h1>
@@ -307,60 +310,71 @@ export default function GymWorkout() {
           </div>
         )}
 
-        {/* Rest Timer Settings */}
-        {!isResting && (
-          <div className="bg-gray-800 p-4 rounded-lg mb-6">
-            <label className="block text-gray-300 text-sm mb-2">Default Rest Time (seconds)</label>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setRestTimeSeconds(60)}
-                className={`px-4 py-2 rounded ${restTimeSeconds === 60 ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
-              >
-                60s
-              </button>
-              <button
-                onClick={() => setRestTimeSeconds(90)}
-                className={`px-4 py-2 rounded ${restTimeSeconds === 90 ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
-              >
-                90s
-              </button>
-              <button
-                onClick={() => setRestTimeSeconds(120)}
-                className={`px-4 py-2 rounded ${restTimeSeconds === 120 ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
-              >
-                120s
-              </button>
-              <button
-                onClick={() => setRestTimeSeconds(180)}
-                className={`px-4 py-2 rounded ${restTimeSeconds === 180 ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
-              >
-                180s
-              </button>
+        {/* No Exercise Selected - Show Exercise Selector */}
+        {!currentExercise && (
+          <>
+            {/* Rest Timer Settings */}
+            <div className="bg-gray-800 p-4 rounded-lg mb-6">
+              <label className="block text-gray-300 text-sm mb-2">Default Rest Time</label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setRestTimeSeconds(60)}
+                  className={`px-4 py-2 rounded ${restTimeSeconds === 60 ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+                >
+                  60s
+                </button>
+                <button
+                  onClick={() => setRestTimeSeconds(90)}
+                  className={`px-4 py-2 rounded ${restTimeSeconds === 90 ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+                >
+                  90s
+                </button>
+                <button
+                  onClick={() => setRestTimeSeconds(120)}
+                  className={`px-4 py-2 rounded ${restTimeSeconds === 120 ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+                >
+                  120s
+                </button>
+                <button
+                  onClick={() => setRestTimeSeconds(180)}
+                  className={`px-4 py-2 rounded ${restTimeSeconds === 180 ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+                >
+                  180s
+                </button>
+              </div>
             </div>
-          </div>
+
+            {/* Exercise Selection */}
+            <div className="bg-gray-800 p-6 rounded-lg mb-6">
+              <label className="block text-white text-lg font-semibold mb-3">
+                Select Exercise:
+              </label>
+              <select
+                value={selectedExerciseName}
+                onChange={(e) => selectExercise(e.target.value)}
+                className="w-full p-3 rounded bg-gray-700 text-white text-lg"
+              >
+                <option value="">-- Choose Exercise --</option>
+                {COMMON_EXERCISES.map(exercise => (
+                  <option key={exercise} value={exercise}>{exercise}</option>
+                ))}
+              </select>
+            </div>
+          </>
         )}
 
-        {/* Exercise Selection */}
-        <div className="bg-gray-800 p-6 rounded-lg mb-6">
-          <label className="block text-white text-lg font-semibold mb-3">
-            Select Exercise:
-          </label>
-          <select
-            value={selectedExerciseName}
-            onChange={(e) => selectExercise(e.target.value)}
-            className="w-full p-3 rounded bg-gray-700 text-white text-lg"
-          >
-            <option value="">-- Choose Exercise --</option>
-            {COMMON_EXERCISES.map(exercise => (
-              <option key={exercise} value={exercise}>{exercise}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Current Exercise */}
+        {/* Exercise Selected - Show Logging Interface */}
         {currentExercise && (
           <div className="bg-gray-800 p-6 rounded-lg mb-6">
-            <h2 className="text-2xl font-bold text-white mb-4">{currentExercise.exercise_name}</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold text-white">{currentExercise.exercise_name}</h2>
+              <button
+                onClick={switchExercise}
+                className="bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
+              >
+                Switch Exercise
+              </button>
+            </div>
 
             {/* Last Workout Info */}
             {lastWorkout && (
@@ -370,7 +384,7 @@ export default function GymWorkout() {
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {lastWorkout.sets.map((set: any, idx: number) => (
-                    <span key={idx} className="text-gray-300 text-sm">
+                    <span key={idx} className="text-gray-300 text-sm bg-gray-600 px-2 py-1 rounded">
                       {set.weight} lbs × {set.reps}
                     </span>
                   ))}
@@ -385,9 +399,7 @@ export default function GymWorkout() {
                 <div className="space-y-2">
                   {currentExercise.sets.map((set: any) => (
                     <div key={set.id} className="bg-gray-700 p-3 rounded flex justify-between items-center">
-                      <span className="text-white">
-                        Set {set.set_number}
-                      </span>
+                      <span className="text-white">Set {set.set_number}</span>
                       <span className="text-green-400 font-semibold">
                         {set.weight} lbs × {set.reps} reps ✓
                       </span>
@@ -399,7 +411,9 @@ export default function GymWorkout() {
 
             {/* Add Set Form */}
             <div className="border-t border-gray-700 pt-4">
-              <p className="text-white font-semibold mb-3">Log Next Set:</p>
+              <p className="text-white font-semibold mb-3">
+                {currentExercise.sets && currentExercise.sets.length > 0 ? 'Next Set:' : 'First Set:'}
+              </p>
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
                   <label className="block text-gray-400 text-sm mb-2">Weight (lbs)</label>
@@ -426,9 +440,9 @@ export default function GymWorkout() {
               <button
                 onClick={addSet}
                 disabled={!weight || !reps}
-                className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                className="w-full bg-blue-600 text-white py-4 rounded-lg text-lg font-semibold hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
               >
-                Add Set
+                {currentExercise.sets && currentExercise.sets.length > 0 ? 'Do Another Set' : 'Log First Set'}
               </button>
             </div>
           </div>
@@ -440,7 +454,7 @@ export default function GymWorkout() {
             <h3 className="text-xl font-bold text-white mb-4">Today's Workout Summary</h3>
             <div className="space-y-4">
               {activeSession.exercises.map((exercise: any) => (
-                <div key={exercise.id} className="border-b border-gray-700 pb-3">
+                <div key={exercise.id} className="border-b border-gray-700 pb-3 last:border-0">
                   <p className="text-white font-semibold mb-2">{exercise.exercise_name}</p>
                   {exercise.sets && exercise.sets.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
@@ -465,7 +479,7 @@ export default function GymWorkout() {
                 onChange={(e) => setWorkoutNotes(e.target.value)}
                 className="w-full p-3 rounded bg-gray-700 text-white"
                 rows={3}
-                placeholder="How did the workout feel? Any observations..."
+                placeholder="How did the workout feel?"
               />
             </div>
           </div>
