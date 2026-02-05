@@ -28,10 +28,68 @@ export default function GymWorkout() {
   const [loading, setLoading] = useState(true)
   const [lastWorkout, setLastWorkout] = useState<any>(null)
   const [workoutNotes, setWorkoutNotes] = useState('')
+  
+  // Rest timer state
+  const [restTimeSeconds, setRestTimeSeconds] = useState(90) // Default 90 seconds
+  const [timeRemaining, setTimeRemaining] = useState<number | null>(null)
+  const [isResting, setIsResting] = useState(false)
 
   useEffect(() => {
     checkActiveSession()
   }, [])
+
+  // Rest timer countdown
+  useEffect(() => {
+    if (timeRemaining === null || timeRemaining <= 0) {
+      setIsResting(false)
+      return
+    }
+
+    const interval = setInterval(() => {
+      setTimeRemaining(prev => {
+        if (prev === null || prev <= 1) {
+          // Timer finished
+          playSound()
+          setIsResting(false)
+          return null
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [timeRemaining])
+
+  const playSound = () => {
+    // Play a beep sound when timer finishes
+    if (typeof window !== 'undefined' && 'AudioContext' in window) {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+      const oscillator = audioContext.createOscillator()
+      const gainNode = audioContext.createGain()
+      
+      oscillator.connect(gainNode)
+      gainNode.connect(audioContext.destination)
+      
+      oscillator.frequency.value = 800
+      oscillator.type = 'sine'
+      
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5)
+      
+      oscillator.start(audioContext.currentTime)
+      oscillator.stop(audioContext.currentTime + 0.5)
+    }
+  }
+
+  const startRestTimer = () => {
+    setTimeRemaining(restTimeSeconds)
+    setIsResting(true)
+  }
+
+  const skipRest = () => {
+    setTimeRemaining(null)
+    setIsResting(false)
+  }
 
   const checkActiveSession = async () => {
     try {
@@ -148,6 +206,9 @@ export default function GymWorkout() {
       // Clear inputs
       setWeight('')
       setReps('')
+
+      // Start rest timer
+      startRestTimer()
     } catch (error) {
       console.error('Error adding set:', error)
     }
@@ -155,7 +216,7 @@ export default function GymWorkout() {
 
   const endWorkout = async () => {
     if (!confirm('End this workout?')) return
-  
+
     try {
       await fetch('/api/gym', {
         method: 'PUT',
@@ -167,12 +228,16 @@ export default function GymWorkout() {
       })
       
       alert('Workout completed! 🎉')
-      
-      // Redirect to history page
       window.location.href = '/gym/history'
     } catch (error) {
       console.error('Error ending workout:', error)
     }
+  }
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
   if (loading) {
@@ -219,6 +284,61 @@ export default function GymWorkout() {
             End Workout
           </button>
         </div>
+
+        {/* Rest Timer */}
+        {isResting && timeRemaining !== null && (
+          <div className="bg-gradient-to-br from-blue-900 to-blue-700 p-6 rounded-lg mb-6 text-center border-2 border-blue-500">
+            <p className="text-blue-200 text-sm mb-2">Rest Period</p>
+            <p className="text-white text-6xl font-bold mb-4">{formatTime(timeRemaining)}</p>
+            <div className="flex gap-4 justify-center">
+              <button
+                onClick={skipRest}
+                className="bg-white text-blue-900 px-6 py-2 rounded-lg font-semibold hover:bg-gray-100"
+              >
+                Skip Rest
+              </button>
+              <button
+                onClick={() => setTimeRemaining(timeRemaining + 30)}
+                className="bg-blue-800 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-900"
+              >
+                +30s
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Rest Timer Settings */}
+        {!isResting && (
+          <div className="bg-gray-800 p-4 rounded-lg mb-6">
+            <label className="block text-gray-300 text-sm mb-2">Default Rest Time (seconds)</label>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setRestTimeSeconds(60)}
+                className={`px-4 py-2 rounded ${restTimeSeconds === 60 ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+              >
+                60s
+              </button>
+              <button
+                onClick={() => setRestTimeSeconds(90)}
+                className={`px-4 py-2 rounded ${restTimeSeconds === 90 ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+              >
+                90s
+              </button>
+              <button
+                onClick={() => setRestTimeSeconds(120)}
+                className={`px-4 py-2 rounded ${restTimeSeconds === 120 ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+              >
+                120s
+              </button>
+              <button
+                onClick={() => setRestTimeSeconds(180)}
+                className={`px-4 py-2 rounded ${restTimeSeconds === 180 ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+              >
+                180s
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Exercise Selection */}
         <div className="bg-gray-800 p-6 rounded-lg mb-6">
