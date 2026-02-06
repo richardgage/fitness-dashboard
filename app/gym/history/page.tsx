@@ -7,10 +7,6 @@ export default function GymHistory() {
   const [loading, setLoading] = useState(true)
   const [showHistory, setShowHistory] = useState(false)
 
-  useEffect(() => {
-    fetchSessions()
-  }, [])
-
   const fetchSessions = async () => {
     try {
       const response = await fetch('/api/gym')
@@ -22,6 +18,10 @@ export default function GymHistory() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    fetchSessions()
+  }, [])
 
   const formatDuration = (startTime: string, endTime: string) => {
     const start = new Date(startTime)
