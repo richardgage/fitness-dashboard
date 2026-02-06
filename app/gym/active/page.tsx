@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react'
 
 const COMMON_EXERCISES = [
   'Bench Press',
-  'Squat',
   'Deadlift',
   'Overhead Press',
   'Barbell Row',
@@ -16,7 +15,20 @@ const COMMON_EXERCISES = [
   'Shoulder Press',
   'Leg Curl',
   'Leg Extension',
-  'Calf Raise'
+  'Calf Raise',
+  'Bulgarian Split Squat',
+  'Chest Fly',
+  'Cable Row',
+  'Face Pull',
+  'Hammer Curl',
+  'Military Press',
+  'Front Squat',
+  'Back Squat',
+  'Romanian Deadlift',
+  'Hip Thrust',
+  'Incline Bench Press',
+  'Decline Bench Press',
+  'Seated Row',
 ].sort()
 
 export default function GymWorkout() {

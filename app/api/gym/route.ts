@@ -1,12 +1,15 @@
-import { 
-    startGymSession, 
-    endGymSession, 
-    getActiveSession, 
+import {
+    startGymSession,
+    endGymSession,
+    getActiveSession,
     getSessionDetails,
     getAllGymSessions,
     addExerciseToSession,
     addSetToExercise,
-    getLastWorkoutForExercise
+    getLastWorkoutForExercise,
+    getGymDashboardStats,
+    getExerciseFrequency,
+    getVolumeOverTime
   } from '@/lib/db';
   import { NextResponse } from 'next/server';
   
@@ -32,6 +35,21 @@ import {
         return NextResponse.json(details);
       }
   
+      if (action === 'dashboardStats') {
+        const [stats, exerciseFrequency, volumeOverTime, recentSessions] = await Promise.all([
+          getGymDashboardStats(),
+          getExerciseFrequency(),
+          getVolumeOverTime(),
+          getAllGymSessions()
+        ]);
+        return NextResponse.json({
+          stats,
+          exerciseFrequency,
+          volumeOverTime,
+          recentSessions: recentSessions.slice(0, 5)
+        });
+      }
+
       if (action === 'lastWorkout' && exerciseName) {
         const lastWorkout = await getLastWorkoutForExercise(exerciseName);
         return NextResponse.json(lastWorkout);

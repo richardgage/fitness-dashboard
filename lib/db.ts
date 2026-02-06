@@ -278,6 +278,61 @@ export async function getLastWorkoutForExercise(exerciseName: string) {
   return result.rows[0] || null;
 }
 
+// Gym dashboard stats
+export async function getGymDashboardStats() {
+  const result = await sql`
+    SELECT
+      COUNT(DISTINCT s.id)::int as total_sessions,
+      COUNT(DISTINCT CASE WHEN s.date >= CURRENT_DATE - INTERVAL '7 days' THEN s.id END)::int as sessions_this_week,
+      COUNT(DISTINCT CASE WHEN s.date >= CURRENT_DATE - INTERVAL '30 days' THEN s.id END)::int as sessions_this_month,
+      COALESCE(SUM(gs.weight * gs.reps), 0)::numeric as total_volume,
+      COALESCE(SUM(CASE WHEN s.date >= CURRENT_DATE - INTERVAL '7 days' THEN gs.weight * gs.reps ELSE 0 END), 0)::numeric as volume_this_week,
+      COUNT(gs.id)::int as total_sets,
+      COUNT(DISTINCT e.exercise_name)::int as unique_exercises,
+      COALESCE(MAX(gs.weight), 0)::numeric as heaviest_weight
+    FROM gym_sessions s
+    LEFT JOIN gym_exercises e ON s.id = e.session_id
+    LEFT JOIN gym_sets gs ON e.id = gs.exercise_id
+    WHERE s.end_time IS NOT NULL
+  `;
+  return result.rows[0];
+}
+
+export async function getExerciseFrequency() {
+  const result = await sql`
+    SELECT
+      e.exercise_name as name,
+      COUNT(DISTINCT e.session_id)::int as session_count,
+      COUNT(gs.id)::int as total_sets,
+      COALESCE(SUM(gs.weight * gs.reps), 0)::numeric as total_volume
+    FROM gym_exercises e
+    JOIN gym_sessions s ON e.session_id = s.id
+    LEFT JOIN gym_sets gs ON e.id = gs.exercise_id
+    WHERE s.end_time IS NOT NULL
+    GROUP BY e.exercise_name
+    ORDER BY session_count DESC
+  `;
+  return result.rows;
+}
+
+export async function getVolumeOverTime() {
+  const result = await sql`
+    SELECT
+      s.id as session_id,
+      s.date,
+      COALESCE(SUM(gs.weight * gs.reps), 0)::numeric as session_volume,
+      COUNT(DISTINCT e.id)::int as exercise_count,
+      COUNT(gs.id)::int as set_count
+    FROM gym_sessions s
+    LEFT JOIN gym_exercises e ON s.id = e.session_id
+    LEFT JOIN gym_sets gs ON e.id = gs.exercise_id
+    WHERE s.end_time IS NOT NULL
+    GROUP BY s.id, s.date
+    ORDER BY s.date ASC
+  `;
+  return result.rows;
+}
+
 // Create running table
 export async function createRunsTable() {
   try {

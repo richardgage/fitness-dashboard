@@ -1,131 +1,30 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  LineChart, Line, PieChart, Pie, Cell, AreaChart, Area, Legend 
+import Link from 'next/link'
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, AreaChart, Area
 } from 'recharts'
 
-const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6']
+const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316']
+
+const formatVolume = (lbs: number) => {
+  const val = parseFloat(String(lbs)) || 0
+  if (val >= 1000000) return `${(val / 1000000).toFixed(1)}M lbs`
+  if (val >= 1000) return `${(val / 1000).toFixed(1)}K lbs`
+  return `${val.toLocaleString()} lbs`
+}
 
 export default function Dashboard() {
-  const [workouts, setWorkouts] = useState([])
-  const [stats, setStats] = useState({
-    totalWorkouts: 0,
-    totalDuration: 0,
-    totalDistance: 0,
-    thisWeek: 0,
-    thisMonth: 0,
-    longestWorkout: 0,
-    longestDistance: 0,
-    avgDuration: 0
-  })
+  const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetchWorkouts()
+    fetch('/api/gym?action=dashboardStats')
+      .then(res => res.json())
+      .then(d => { setData(d); setLoading(false) })
+      .catch(() => setLoading(false))
   }, [])
-
-  const fetchWorkouts = async () => {
-    try {
-      const response = await fetch('/api/workouts')
-      const data = await response.json()
-      setWorkouts(data)
-      calculateStats(data)
-      setLoading(false)
-    } catch (error) {
-      console.error('Error fetching workouts:', error)
-      setLoading(false)
-    }
-  }
-
-  const calculateStats = (workouts: any[]) => {
-    const now = new Date()
-    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-    const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-
-    const totalDuration = workouts.reduce((sum, w) => sum + w.duration, 0)
-    const totalDistance = workouts.reduce((sum, w) => sum + parseFloat(w.distance || 0), 0)
-    
-    const thisWeek = workouts.filter(w => new Date(w.date) >= oneWeekAgo).length
-    const thisMonth = workouts.filter(w => new Date(w.date) >= oneMonthAgo).length
-
-    const longestWorkout = Math.max(...workouts.map(w => w.duration), 0)
-    const longestDistance = Math.max(...workouts.map(w => parseFloat(w.distance || 0)), 0)
-    const avgDuration = workouts.length > 0 ? Math.round(totalDuration / workouts.length) : 0
-
-    setStats({
-      totalWorkouts: workouts.length,
-      totalDuration,
-      totalDistance: Math.round(totalDistance * 10) / 10,
-      thisWeek,
-      thisMonth,
-      longestWorkout,
-      longestDistance: Math.round(longestDistance * 10) / 10,
-      avgDuration
-    })
-  }
-
-  // Workouts by type for pie chart
-  const getWorkoutsByType = () => {
-    const byType: { [key: string]: number } = {}
-    workouts.forEach((w: any) => {
-      byType[w.type] = (byType[w.type] || 0) + 1
-    })
-    return Object.entries(byType).map(([type, count]) => ({
-      name: type.charAt(0).toUpperCase() + type.slice(1),
-      value: count
-    }))
-  }
-
-  // Last 7 days activity
-  const getLast7Days = () => {
-    const last7Days = []
-    const now = new Date()
-    
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000)
-      const dateStr = date.toISOString().split('T')[0]
-      const dayWorkouts = workouts.filter((w: any) => w.date.split('T')[0] === dateStr)
-      const totalMinutes = dayWorkouts.reduce((sum, w: any) => sum + w.duration, 0)
-      
-      last7Days.push({
-        day: date.toLocaleDateString('en-US', { weekday: 'short' }),
-        minutes: totalMinutes
-      })
-    }
-    
-    return last7Days
-  }
-
-  // Cumulative distance over time
-  const getCumulativeDistance = () => {
-    const sorted = [...workouts]
-      .filter((w: any) => w.distance > 0)
-      .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    
-    let cumulative = 0
-    return sorted.map((w: any) => {
-      cumulative += parseFloat(w.distance)
-      return {
-        date: new Date(w.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        distance: Math.round(cumulative * 10) / 10
-      }
-    }).slice(-30) // Last 30 workouts with distance
-  }
-
-  // Monthly totals
-  const getMonthlyTotals = () => {
-    const byMonth: { [key: string]: number } = {}
-    
-    workouts.forEach((w: any) => {
-      const month = new Date(w.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-      byMonth[month] = (byMonth[month] || 0) + w.duration
-    })
-    
-    return Object.entries(byMonth)
-      .map(([month, minutes]) => ({ month, hours: Math.round(minutes / 60 * 10) / 10 }))
-      .slice(-6) // Last 6 months
-  }
 
   if (loading) {
     return (
@@ -135,148 +34,227 @@ export default function Dashboard() {
     )
   }
 
+  if (!data || !data.stats || data.stats.total_sessions === 0) {
+    return (
+      <div className="min-h-screen bg-gray-900 p-8">
+        <div className="max-w-2xl mx-auto text-center">
+          <h1 className="text-4xl font-bold text-white mb-8">Gym Dashboard</h1>
+          <div className="bg-gray-800 p-8 rounded-lg">
+            <p className="text-gray-400 mb-6">No workouts logged yet. Start your first workout to see stats here.</p>
+            <Link
+              href="/gym/active"
+              className="bg-green-600 text-white px-8 py-4 rounded-lg text-xl font-semibold hover:bg-green-700"
+            >
+              Start a Workout
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const { stats, exerciseFrequency, volumeOverTime, recentSessions } = data
+
+  const totalVolume = parseFloat(stats.total_volume) || 0
+  const volumeThisWeek = parseFloat(stats.volume_this_week) || 0
+  const heaviestWeight = parseFloat(stats.heaviest_weight) || 0
+
+  // Monthly volume for bar chart
+  const getMonthlyVolume = () => {
+    const byMonth: { [key: string]: number } = {}
+    volumeOverTime.forEach((s: any) => {
+      const month = new Date(s.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+      byMonth[month] = (byMonth[month] || 0) + (parseFloat(s.session_volume) || 0)
+    })
+    return Object.entries(byMonth)
+      .map(([month, volume]) => ({ month, volume: Math.round(volume) }))
+      .slice(-6)
+  }
+
+  // Volume over time for area chart (last 20 sessions)
+  const getVolumeChartData = () => {
+    return volumeOverTime.slice(-20).map((s: any) => ({
+      date: new Date(s.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      volume: parseFloat(s.session_volume) || 0
+    }))
+  }
+
+  // Exercise frequency for pie chart
+  const getPieData = () => {
+    return exerciseFrequency.slice(0, 8).map((e: any) => ({
+      name: e.name,
+      value: parseInt(e.session_count)
+    }))
+  }
+
+  const formatDuration = (startTime: string, endTime: string) => {
+    const start = new Date(startTime)
+    const end = new Date(endTime)
+    const minutes = Math.round((end.getTime() - start.getTime()) / 60000)
+    const hours = Math.floor(minutes / 60)
+    const mins = minutes % 60
+    return hours > 0 ? `${hours}h ${mins}m` : `${mins} min`
+  }
+
   return (
     <div className="min-h-screen bg-gray-900 p-8">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-4xl font-bold text-white mb-8">Training Dashboard</h1>
+        <h1 className="text-4xl font-bold text-white mb-8">Gym Dashboard</h1>
 
         {/* Stats Cards Row 1 */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
           <div className="bg-gray-800 p-6 rounded-lg">
             <p className="text-gray-400 text-sm uppercase mb-2">Total Workouts</p>
-            <p className="text-white text-3xl font-bold">{stats.totalWorkouts}</p>
+            <p className="text-white text-3xl font-bold">{stats.total_sessions}</p>
           </div>
-          
-          <div className="bg-gray-800 p-6 rounded-lg">
-            <p className="text-gray-400 text-sm uppercase mb-2">Total Time</p>
-            <p className="text-white text-3xl font-bold">
-              {Math.floor(stats.totalDuration / 60)}h {stats.totalDuration % 60}m
-            </p>
-          </div>
-          
-          <div className="bg-gray-800 p-6 rounded-lg">
-            <p className="text-gray-400 text-sm uppercase mb-2">Total Distance</p>
-            <p className="text-white text-3xl font-bold">{stats.totalDistance} km</p>
-          </div>
-          
           <div className="bg-gray-800 p-6 rounded-lg">
             <p className="text-gray-400 text-sm uppercase mb-2">This Week</p>
-            <p className="text-white text-3xl font-bold">{stats.thisWeek}</p>
+            <p className="text-white text-3xl font-bold">{stats.sessions_this_week}</p>
+          </div>
+          <div className="bg-gray-800 p-6 rounded-lg">
+            <p className="text-gray-400 text-sm uppercase mb-2">This Month</p>
+            <p className="text-white text-3xl font-bold">{stats.sessions_this_month}</p>
+          </div>
+          <div className="bg-gray-800 p-6 rounded-lg">
+            <p className="text-gray-400 text-sm uppercase mb-2">Total Volume</p>
+            <p className="text-white text-3xl font-bold">{formatVolume(totalVolume)}</p>
           </div>
         </div>
 
-        {/* Stats Cards Row 2 - Personal Records */}
+        {/* Stats Cards Row 2 - Highlights */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-gradient-to-br from-blue-900/50 to-gray-800 p-6 rounded-lg border border-blue-500/30">
-            <p className="text-blue-300 text-sm uppercase mb-2">Longest Workout</p>
-            <p className="text-white text-3xl font-bold">{stats.longestWorkout} min</p>
+            <p className="text-blue-300 text-sm uppercase mb-2">Volume This Week</p>
+            <p className="text-white text-3xl font-bold">{formatVolume(volumeThisWeek)}</p>
           </div>
-          
           <div className="bg-gradient-to-br from-green-900/50 to-gray-800 p-6 rounded-lg border border-green-500/30">
-            <p className="text-green-300 text-sm uppercase mb-2">Longest Distance</p>
-            <p className="text-white text-3xl font-bold">{stats.longestDistance} km</p>
+            <p className="text-green-300 text-sm uppercase mb-2">Total Sets</p>
+            <p className="text-white text-3xl font-bold">{stats.total_sets}</p>
           </div>
-          
           <div className="bg-gradient-to-br from-purple-900/50 to-gray-800 p-6 rounded-lg border border-purple-500/30">
-            <p className="text-purple-300 text-sm uppercase mb-2">Avg Workout</p>
-            <p className="text-white text-3xl font-bold">{stats.avgDuration} min</p>
+            <p className="text-purple-300 text-sm uppercase mb-2">Heaviest Lift</p>
+            <p className="text-white text-3xl font-bold">{heaviestWeight} lbs</p>
           </div>
         </div>
 
-        {/* Charts Grid */}
+        {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Last 7 Days Activity */}
+          {/* Volume Over Time */}
           <div className="bg-gray-800 p-6 rounded-lg">
-            <h2 className="text-xl font-bold text-white mb-4">Last 7 Days (minutes)</h2>
+            <h2 className="text-xl font-bold text-white mb-4">Volume Per Session</h2>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={getLast7Days()}>
+              <AreaChart data={getVolumeChartData()}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="day" stroke="#9CA3AF" />
-                <YAxis stroke="#9CA3AF" />
-                <Tooltip 
+                <XAxis dataKey="date" stroke="#9CA3AF" />
+                <YAxis stroke="#9CA3AF" tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v} />
+                <Tooltip
                   contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }}
                   labelStyle={{ color: '#F3F4F6' }}
+                  formatter={(value: any) => [formatVolume(value), 'Volume']}
                 />
-                <Line type="monotone" dataKey="minutes" stroke="#10B981" strokeWidth={2} />
-              </LineChart>
+                <Area type="monotone" dataKey="volume" stroke="#3B82F6" fill="#3B82F6" fillOpacity={0.3} />
+              </AreaChart>
             </ResponsiveContainer>
           </div>
 
-          {/* Workouts by Type - Pie Chart */}
+          {/* Exercise Frequency Pie */}
           <div className="bg-gray-800 p-6 rounded-lg">
-            <h2 className="text-xl font-bold text-white mb-4">Activity Distribution</h2>
+            <h2 className="text-xl font-bold text-white mb-4">Exercise Frequency</h2>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
-                  data={getWorkoutsByType()}
+                  data={getPieData()}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) => `${name}: ${percent ? (percent * 100).toFixed(0) : 0}%`}                  outerRadius={100}
+                  label={({ name, percent }) => `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`}
+                  outerRadius={100}
                   fill="#8884d8"
                   dataKey="value"
                 >
-                  {getWorkoutsByType().map((entry, index) => (
+                  {getPieData().map((_: any, index: number) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }}
                 />
               </PieChart>
             </ResponsiveContainer>
           </div>
 
-          {/* Cumulative Distance */}
+          {/* Monthly Volume */}
           <div className="bg-gray-800 p-6 rounded-lg">
-            <h2 className="text-xl font-bold text-white mb-4">Cumulative Distance (km)</h2>
+            <h2 className="text-xl font-bold text-white mb-4">Monthly Volume</h2>
             <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={getCumulativeDistance()}>
+              <BarChart data={getMonthlyVolume()}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="date" stroke="#9CA3AF" />
-                <YAxis stroke="#9CA3AF" />
-                <Tooltip 
+                <XAxis dataKey="month" stroke="#9CA3AF" />
+                <YAxis stroke="#9CA3AF" tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v} />
+                <Tooltip
                   contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }}
                   labelStyle={{ color: '#F3F4F6' }}
+                  formatter={(value: any) => [formatVolume(value), 'Volume']}
                 />
-                <Area type="monotone" dataKey="distance" stroke="#3B82F6" fill="#3B82F6" fillOpacity={0.6} />
-              </AreaChart>
+                <Bar dataKey="volume" fill="#F59E0B" />
+              </BarChart>
             </ResponsiveContainer>
           </div>
 
-          {/* Monthly Training Hours */}
+          {/* Top Exercises by Volume */}
           <div className="bg-gray-800 p-6 rounded-lg">
-            <h2 className="text-xl font-bold text-white mb-4">Monthly Training (hours)</h2>
+            <h2 className="text-xl font-bold text-white mb-4">Top Exercises by Volume</h2>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={getMonthlyTotals()}>
+              <BarChart
+                data={exerciseFrequency.slice(0, 6).map((e: any) => ({
+                  name: e.name,
+                  volume: parseFloat(e.total_volume) || 0
+                }))}
+                layout="vertical"
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="month" stroke="#9CA3AF" />
-                <YAxis stroke="#9CA3AF" />
-                <Tooltip 
+                <XAxis type="number" stroke="#9CA3AF" tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v} />
+                <YAxis type="category" dataKey="name" stroke="#9CA3AF" width={120} />
+                <Tooltip
                   contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }}
                   labelStyle={{ color: '#F3F4F6' }}
+                  formatter={(value: any) => [formatVolume(value), 'Volume']}
                 />
-                <Bar dataKey="hours" fill="#F59E0B" />
+                <Bar dataKey="volume" fill="#10B981" />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Recent Activity Summary */}
+        {/* Recent Workouts */}
         <div className="bg-gray-800 p-6 rounded-lg">
-          <h2 className="text-xl font-bold text-white mb-4">Recent Activity</h2>
+          <h2 className="text-xl font-bold text-white mb-4">Recent Workouts</h2>
           <div className="space-y-3">
-            {workouts.slice(0, 5).map((workout: any) => (
-              <div key={workout.id} className="flex justify-between items-center border-b border-gray-700 pb-2">
+            {recentSessions.map((session: any) => (
+              <Link
+                key={session.id}
+                href={`/gym/workout/${session.id}`}
+                className="flex justify-between items-center border-b border-gray-700 pb-3 hover:bg-gray-700/50 rounded px-2 -mx-2 transition-colors"
+              >
                 <div>
-                  <p className="text-white font-semibold capitalize">{workout.type}</p>
-                  <p className="text-gray-400 text-sm">{new Date(workout.date).toLocaleDateString()}</p>
+                  <p className="text-white font-semibold">
+                    {new Date(session.date).toLocaleDateString('en-US', {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric'
+                    })}
+                  </p>
+                  <p className="text-gray-400 text-sm">
+                    {formatDuration(session.start_time, session.end_time)}
+                  </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-white">{workout.duration} min</p>
-                  {workout.distance > 0 && <p className="text-gray-400 text-sm">{workout.distance} km</p>}
+                  <p className="text-blue-400 font-semibold">
+                    {session.exercise_count} {parseInt(session.exercise_count) === 1 ? 'exercise' : 'exercises'}
+                  </p>
+                  <p className="text-gray-400 text-sm">{session.total_sets} sets</p>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
