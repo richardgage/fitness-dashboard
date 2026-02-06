@@ -8,7 +8,7 @@ export default function GymLanding() {
         
         <div className="bg-gray-800 p-8 rounded-lg space-y-4">
           <Link 
-            href="/gym/workout"
+            href="/gym/active"
             className="block bg-green-600 text-white px-8 py-6 rounded-lg text-xl font-semibold hover:bg-green-700 text-center"
           >
             🏋️ Start New Workout

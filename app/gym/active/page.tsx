@@ -230,7 +230,7 @@ export default function GymWorkout() {
       })
       
       alert('Workout completed! 🎉')
-      window.location.href = '/gym'
+      window.location.href = '/gym/history'
     } catch (error) {
       console.error('Error ending workout:', error)
     }
