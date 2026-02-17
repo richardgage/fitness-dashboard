@@ -46,13 +46,7 @@ export default function RootLayout({
                 >
                   Gym
                 </Link>             
-                <Link 
-                  href="/import" 
-                  className="text-gray-300 hover:text-white transition-colors"
-                >
-                  Import
-                </Link>
-                <Link 
+<Link 
                   href="/feedback" 
                   className="text-gray-300 hover:text-white transition-colors"
                 >

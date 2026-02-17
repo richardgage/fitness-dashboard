@@ -24,27 +24,28 @@ This project demonstrates professional full-stack development through a real-wor
 - **Volume Calculations** - Total weight lifted per exercise and workout
 - **Performance Tracking** - Compare current performance to previous sessions
 
+### Dashboard & Analytics
+- **Aggregate Statistics** - Total sessions, volume, sets, and unique exercises
+- **Volume Trends** - Area chart tracking session volume over time
+- **Exercise Frequency** - Pie chart showing most-used exercises
+- **Weekly/Monthly Summaries** - Sessions and volume breakdowns by time period
+
 ### Data Management
-- **CSV Import** - Bulk upload workout history from spreadsheets
 - **Full CRUD Operations** - Create, read, update, and delete workouts
 - **User Feedback System** - Built-in feedback collection for feature requests
-
-### Dashboard (Coming Soon)
-- Aggregate statistics across all workouts
-- Progressive overload visualization
-- Training volume trends
 
 ## Tech Stack
 
 ### Frontend
-- **Next.js 15** (App Router)
-- **React 18** with TypeScript
+- **Next.js 16** (App Router)
+- **React 19** with TypeScript
+- **Recharts** for data visualization
 - **Tailwind CSS** for styling
 - Client-side state management for active workouts
 
 ### Backend
 - **Next.js API Routes** (serverless functions)
-- **PostgreSQL** via Neon (cloud database)
+- **PostgreSQL** via Vercel Postgres (cloud database)
 - RESTful API design
 
 ### Database Design
@@ -74,7 +75,7 @@ This normalization eliminates data redundancy and enables efficient querying at 
 
 1. Clone the repository
 ```bash
-git clone https://github.com/richard1gage/fitness-dashboard.git
+git clone https://github.com/richardgage/fitness-dashboard.git
 cd fitness-dashboard
 ```
 
@@ -124,12 +125,6 @@ Visit [http://localhost:3000](http://localhost:3000)
 - Click **Show Workout History** from the Gym landing page
 - Click any workout to see full details (all exercises and sets)
 
-### Importing Data
-- Navigate to **Import**
-- Download the CSV template
-- Add your workout data
-- Upload and import
-
 ## Project Structure
 ```
 fitness-dashboard/
@@ -137,15 +132,13 @@ fitness-dashboard/
 │   ├── api/              # API routes
 │   │   ├── gym/          # Gym workout CRUD endpoints
 │   │   ├── init-gym/     # Database initialization
-│   │   ├── feedback/     # User feedback endpoints
-│   │   └── import/       # CSV import handler
+│   │   └── feedback/     # User feedback endpoints
 │   ├── gym/              # Gym tracking pages
 │   │   ├── page.tsx      # Landing page
 │   │   ├── active/       # Active workout interface
 │   │   ├── history/      # Workout history list
 │   │   └── workout/[id]/ # Individual workout details
 │   ├── dashboard/        # Analytics dashboard
-│   ├── import/           # CSV import page
 │   ├── feedback/         # User feedback form
 │   ├── admin/            # Admin pages
 │   │   └── feedback/     # View feedback submissions
@@ -198,7 +191,7 @@ CREATE TABLE gym_sets (
 
 ### Why Focus on Gym Tracking?
 
-Initially considered multi-sport tracking (running, cycling, swimming), but decided to build one feature comprehensively rather than many features superficially. The gym tracker showcases:
+Decided to build one feature comprehensively rather than many features superficially. The gym tracker showcases:
 
 - **Complex data relationships** - Three-table normalized structure with foreign keys
 - **Real-time state management** - Active workout session persists across page refreshes
