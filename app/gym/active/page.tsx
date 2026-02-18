@@ -19,7 +19,6 @@ const COMMON_EXERCISES = [
   'Bulgarian Split Squat',
   'Chest Fly',
   'Cable Row',
-  'Face Pull',
   'Hammer Curl',
   'Military Press',
   'Front Squat',
@@ -182,6 +181,7 @@ export default function GymWorkout() {
     try {
       const response = await fetch(`/api/gym?action=lastWorkout&exerciseName=${encodeURIComponent(exerciseName)}`)
       const data = await response.json()
+      console.log('-------------------------LastWorkout data:', data)  // add this
       setLastWorkout(data)
     } catch (error) {
       console.error('Error fetching last workout:', error)
@@ -454,15 +454,21 @@ const endWorkout = async () => {
 
             {/* Last Workout Info */}
             {lastWorkout && (
-              <div className="bg-gray-700 p-4 rounded mb-4">
-                <p className="text-gray-400 text-sm mb-2">
-                  Last time ({new Date(lastWorkout.date).toLocaleDateString()}):
+              <div className="bg-black border border-blue-500/40 p-4 rounded mb-4">
+                <p className="text-white text-xs font-semibold uppercase tracking-wider mb-3">
+                  Last Session — {(() => {
+                    const days = Math.floor((new Date().getTime() - new Date(lastWorkout.date).getTime()) / (1000 * 60 * 60 * 24))
+                    if (days === 0) return 'Today'
+                    if (days === 1) return 'Yesterday'
+                    return `${days} days ago`
+                  })()}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {lastWorkout.sets && lastWorkout.sets.map((set: any, idx: number) => (
-                    <span key={idx} className="text-gray-300 text-sm bg-gray-600 px-2 py-1 rounded">
-                      {set.weight} lbs × {set.reps}
-                    </span>
+                    <div key={idx} className="bg-blue-800/40 border border-blue-600/30 px-3 py-2 rounded-lg text-center">
+                      <p className="text-white font-bold text-lg">{set.weight} lbs</p>
+                      <p className="text-white text-xs">{set.reps} reps</p>
+                    </div>
                   ))}
                 </div>
               </div>

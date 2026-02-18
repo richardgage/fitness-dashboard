@@ -34,7 +34,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const action = searchParams.get('action')
   const sessionId = searchParams.get('sessionId')
-  const exerciseName = searchParams.get('exercise')
+  const exerciseName = searchParams.get('exerciseName')
 
   try {
     if (action === 'details' && sessionId) {
