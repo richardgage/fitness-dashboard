@@ -17,6 +17,8 @@ export default function WorkoutDetails() {
     try {
       const response = await fetch(`/api/gym?action=details&sessionId=${params.id}`)
       const data = await response.json()
+      console.log('start_time from API:', data.start_time)  // add this
+      console.log('browser timezone:', Intl.DateTimeFormat().resolvedOptions().timeZone)
       setWorkout(data)
       setLoading(false)
     } catch (error) {

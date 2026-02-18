@@ -40,14 +40,36 @@ export default function GymWorkout() {
   const [loading, setLoading] = useState(true)
   const [lastWorkout, setLastWorkout] = useState<any>(null)
   const [workoutNotes, setWorkoutNotes] = useState('')
-  
+  const [customExercises, setCustomExercises] = useState<string[]>([])
+  const [showAddExercise, setShowAddExercise] = useState(false)
+  const [newExerciseName, setNewExerciseName] = useState('')
+
   // Rest timer state
   const [restTimeSeconds, setRestTimeSeconds] = useState(90)
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null)
   const [isResting, setIsResting] = useState(false)
 
+  const checkActiveSession = async () => {
+    try {
+      const response = await fetch('/api/gym?action=active')
+      const data = await response.json()
+      setActiveSession(data)
+      setLoading(false)
+    } catch (error) {
+      console.error('Error checking active session:', error)
+      setLoading(false)
+    }
+  }
+
+  const fetchUserExercises = async () => {
+    const response = await fetch('/api/gym?action=userExercises')
+    const data = await response.json()
+    setCustomExercises(data)
+  }
+
   useEffect(() => {
     checkActiveSession()
+    fetchUserExercises()
   }, [])
 
   // Rest timer countdown
@@ -101,18 +123,6 @@ export default function GymWorkout() {
     setIsResting(false)
   }
 
-  const checkActiveSession = async () => {
-    try {
-      const response = await fetch('/api/gym?action=active')
-      const data = await response.json()
-      setActiveSession(data)
-      setLoading(false)
-    } catch (error) {
-      console.error('Error checking active session:', error)
-      setLoading(false)
-    }
-  }
-
   const startWorkout = async () => {
     try {
       const today = new Date().toISOString().split('T')[0]
@@ -152,7 +162,7 @@ export default function GymWorkout() {
           })
         })
         const exercise = await response.json()
-        const newExercise = { ...exercise, sets: [] }
+        const newExercise = { ...exercise, exercise_name: exerciseName,sets: [] }
         
         setActiveSession({
           ...activeSession,
@@ -197,14 +207,19 @@ export default function GymWorkout() {
       })
       const newSet = await response.json()
 
-      const updatedExercise = {
-        ...currentExercise,
-        sets: [...(currentExercise.sets || []), newSet]
-      }
+    const updatedExercise = {
+      ...currentExercise,
+      sets: [...(currentExercise.sets || []), {
+        ...newSet,
+        weight: parseFloat(weight),
+        reps: parseInt(reps),
+        set_number: (currentExercise.sets?.length || 0) + 1
+      }]
+  }
       setCurrentExercise(updatedExercise)
 
       const updatedExercises = activeSession.exercises.map((e: any) =>
-        e.id === currentExercise.id ? updatedExercise : e
+        e.exercise_name === currentExercise.exercise_name ? updatedExercise : e
       )
       setActiveSession({ ...activeSession, exercises: updatedExercises })
 
@@ -218,6 +233,21 @@ export default function GymWorkout() {
       console.error('Error adding set:', error)
     }
   }
+
+const handleAddExercise = async () => {
+  if (!newExerciseName.trim()) return
+  
+  await fetch('/api/gym', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'saveUserExercise', exerciseName: newExerciseName.trim() })
+  })
+  
+  setCustomExercises([...customExercises, newExerciseName.trim()].sort())
+  selectExercise(newExerciseName.trim())
+  setNewExerciseName('')
+  setShowAddExercise(false)
+}
 
   const switchExercise = () => {
     setCurrentExercise(null)
@@ -288,7 +318,7 @@ const endWorkout = async () => {
           <div>
             <h1 className="text-4xl font-bold text-white">🏋️ Workout in Progress</h1>
             <p className="text-gray-400 mt-2">
-              Started: {new Date(activeSession.start_time).toLocaleTimeString()}
+              Started: {new Date(activeSession.start_time).toLocaleTimeString('en-US', { timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone })}
             </p>
           </div>
           <button
@@ -360,16 +390,51 @@ const endWorkout = async () => {
               <label className="block text-white text-lg font-semibold mb-3">
                 Select Exercise:
               </label>
-              <select
-                value={selectedExerciseName}
-                onChange={(e) => selectExercise(e.target.value)}
-                className="w-full p-3 rounded bg-gray-700 text-white text-lg"
-              >
-                <option value="">-- Choose Exercise --</option>
-                {COMMON_EXERCISES.map(exercise => (
-                  <option key={exercise} value={exercise}>{exercise}</option>
-                ))}
-              </select>
+              <div className="flex gap-2 items-center">
+                <select
+                  value={selectedExerciseName}
+                  onChange={(e) => selectExercise(e.target.value)}
+                  className="flex-1 p-3 rounded bg-gray-700 text-white text-lg"
+                >
+                  <option value="">-- Choose Exercise --</option>
+                  {[...COMMON_EXERCISES, ...customExercises]
+                    .filter((v, i, a) => a.indexOf(v) === i)
+                    .sort()
+                    .map(exercise => (
+                      <option key={exercise} value={exercise}>{exercise}</option>
+                    ))}
+                </select>
+                <button
+                  onClick={() => setShowAddExercise(!showAddExercise)}
+                  className="bg-gray-700 text-white px-4 py-3 rounded hover:bg-gray-600 text-xl"
+                >
+                  +
+                </button>
+              </div>
+
+              {showAddExercise && (
+                <div className="flex gap-2 mt-2">
+                  <input
+                    type="text"
+                    value={newExerciseName}
+                    onChange={(e) => setNewExerciseName(e.target.value)}
+                    placeholder="Exercise name..."
+                    className="flex-1 p-3 rounded bg-gray-700 text-white"
+                  />
+                  <button
+                    onClick={handleAddExercise}
+                    className="bg-green-600 text-white px-4 py-3 rounded hover:bg-green-700"
+                  >
+                    Add
+                  </button>
+                  <button
+                    onClick={() => setShowAddExercise(false)}
+                    className="bg-gray-700 text-white px-4 py-3 rounded hover:bg-gray-600"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
             </div>
           </>
         )}
@@ -408,8 +473,8 @@ const endWorkout = async () => {
               <div className="mb-4">
                 <p className="text-gray-400 text-sm mb-2">Today's Sets:</p>
                 <div className="space-y-2">
-                  {currentExercise.sets.map((set: any) => (
-                    <div key={set.id} className="bg-gray-700 p-3 rounded flex justify-between items-center">
+                  {currentExercise.sets.map((set: any, idx: number) => (
+                    <div key={set.id || idx} className="bg-gray-700 p-3 rounded flex justify-between items-center">
                       <span className="text-white">Set {set.set_number}</span>
                       <span className="text-green-400 font-semibold">
                         {set.weight} lbs × {set.reps} reps ✓
@@ -464,13 +529,13 @@ const endWorkout = async () => {
           <div className="bg-gray-800 p-6 rounded-lg">
             <h3 className="text-xl font-bold text-white mb-4">Today's Workout Summary</h3>
             <div className="space-y-4">
-              {activeSession.exercises.map((exercise: any) => (
-                <div key={exercise.id} className="border-b border-gray-700 pb-3 last:border-0">
+              {activeSession.exercises.map((exercise: any, idx: number) => (
+                <div key={exercise.id || idx} className="border-b border-gray-700 pb-3 last:border-0">
                   <p className="text-white font-semibold mb-2">{exercise.exercise_name}</p>
                   {exercise.sets && exercise.sets.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
-                      {exercise.sets.map((set: any) => (
-                        <span key={set.id} className="text-gray-400 text-sm">
+                      {exercise.sets.map((set: any, idx: number) => (
+                        <span key={set.id || idx} className="text-gray-400 text-sm">
                           {set.weight}×{set.reps}
                         </span>
                       ))}

@@ -10,7 +10,7 @@ export default function NavBar() {
       <div className="max-w-6xl mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="text-white text-xl font-bold hover:text-blue-400">
-            Fitness Tracker
+            Gym Tracker
           </Link>
           <div className="flex gap-6 items-center">
             {session ? (

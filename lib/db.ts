@@ -46,10 +46,10 @@ export async function createGymTables() {
       CREATE TABLE IF NOT EXISTS gym_sessions (
         id SERIAL PRIMARY KEY,
         date DATE NOT NULL,
-        start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        end_time TIMESTAMP,
+        start_time TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        end_time TIMESTAMPTZ,
         notes TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       )
     `;
 
@@ -110,12 +110,17 @@ export async function endGymSession(sessionId: number, notes?: string) {
 
 // Add exercise to session
 export async function addExerciseToSession(sessionId: number, exerciseName: string, order: number) {
-  const result = await sql`
-    INSERT INTO gym_exercises (session_id, exercise_name, exercise_order)
-    VALUES (${sessionId}, ${exerciseName}, ${order})
-    RETURNING *
-  `;
-  return result.rows[0];
+  try {
+    const result = await sql`
+      INSERT INTO gym_exercises (session_id, exercise_name, exercise_order)
+      VALUES (${sessionId}, ${exerciseName}, ${order})
+      RETURNING *
+    `
+    return result.rows[0]
+  } catch (error) {
+    console.error('addExerciseToSession error:', error)
+    throw error
+  }
 }
 
 // Add set to exercise
@@ -309,4 +314,34 @@ export async function getUserIdByEmail(email: string) {
     SELECT id FROM users WHERE email = ${email}
   `
   return result.rows[0]?.id || null
+}
+
+export async function getUserExercises(userId: number) {
+  const result = await sql`
+    SELECT exercise_name FROM user_exercises
+    WHERE user_id = ${userId}
+    ORDER BY exercise_name ASC
+  `
+  return result.rows.map((row: any) => row.exercise_name)
+}
+
+export async function addUserExercise(userId: number, exerciseName: string) {
+  const result = await sql`
+    INSERT INTO user_exercises (user_id, exercise_name)
+    VALUES (${userId}, ${exerciseName})
+    ON CONFLICT DO NOTHING
+    RETURNING *
+  `
+  return result.rows[0]
+}
+
+export async function createUserExercisesTable() {
+  await sql`
+    CREATE TABLE IF NOT EXISTS user_exercises (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      exercise_name VARCHAR(100) NOT NULL,
+      UNIQUE(user_id, exercise_name)
+    )
+  `
 }

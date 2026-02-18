@@ -16,6 +16,7 @@ import {
 } from '@/lib/db'
 import { authOptions } from '@/app/api/auth/[...nextauth]/authOptions'
 import {sql} from '@vercel/postgres'
+import { getUserExercises, addUserExercise } from '@/lib/db'
 
 
 async function getUserId() {
@@ -66,6 +67,11 @@ export async function GET(request: Request) {
       })
     }
 
+    if (action === 'userExercises') {
+      const data = await getUserExercises(userId)
+      return NextResponse.json(data)
+}
+
     const data = await getAllGymSessions(userId)
     return NextResponse.json(data)
   } catch (error) {
@@ -97,13 +103,21 @@ export async function POST(request: Request) {
       return NextResponse.json(data)
     }
 
-    if (action === 'addExercise') {
-      const data = await addExerciseToSession(body.sessionId, body.exerciseName, body.order)
+    if (action === 'saveUserExercise') {
+      const data = await addUserExercise(userId, body.exerciseName)
       return NextResponse.json(data)
     }
 
     if (action === 'addSet') {
       const data = await addSetToExercise(body.exerciseId, body.setNumber, body.weight, body.reps)
+      return NextResponse.json(data)
+    }
+
+    if (action === 'addExercise') {
+      console.log('Adding exercise:', body.exerciseName, 'to session:', body.sessionId)
+      const data = await addExerciseToSession(body.sessionId, body.exerciseName, body.order)
+      console.log('Exercise saved:', data)
+
       return NextResponse.json(data)
     }
 
