@@ -47,6 +47,7 @@ export default function GymWorkout() {
   const [restTimeSeconds, setRestTimeSeconds] = useState(90)
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null)
   const [isResting, setIsResting] = useState(false)
+  const [restTimeSelected, setRestTimeSelected] = useState(false)
 
   const checkActiveSession = async () => {
     try {
@@ -352,92 +353,122 @@ const endWorkout = async () => {
         )}
 
         {/* No Exercise Selected - Show Exercise Selector */}
-        {!currentExercise && (
-          <>
-            {/* Rest Timer Settings */}
-            <div className="bg-gray-800 p-4 rounded-lg mb-6">
-              <label className="block text-gray-300 text-sm mb-2">Default Rest Time</label>
-              <div className="flex gap-2">
+        {!currentExercise && (<>
+          {!restTimeSelected ? (
+            <div className="bg-gray-800 p-8 rounded-lg text-center mb-6">
+              <h2 className="text-white text-xl font-bold mb-2">Set Default Rest Time</h2>
+              <p className="text-gray-400 text-sm mb-6">How long do you want to rest between sets?</p>
+              <div className="flex flex-wrap gap-3 justify-center mb-6">{[
+                { seconds: 60, label: '60s' },
+                { seconds: 90, label: '90s' },
+                { seconds: 120, label: '2 Minutes' },
+                { seconds: 180, label: '3 Minutes' },
+                { seconds: 240, label: '4 Minutes' },
+                { seconds: 300, label: '5 Minutes' },
+              ].map(({ seconds, label }) => (
                 <button
-                  onClick={() => setRestTimeSeconds(60)}
-                  className={`px-4 py-2 rounded ${restTimeSeconds === 60 ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+                  key={seconds}
+                  onClick={() => setRestTimeSeconds(seconds)}
+                  className={`px-6 py-4 rounded-lg text-lg font-bold transition-colors ${
+                    restTimeSeconds === seconds
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
                 >
-                  60s
+                  {label}
                 </button>
-                <button
-                  onClick={() => setRestTimeSeconds(90)}
-                  className={`px-4 py-2 rounded ${restTimeSeconds === 90 ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
-                >
-                  90s
-                </button>
-                <button
-                  onClick={() => setRestTimeSeconds(120)}
-                  className={`px-4 py-2 rounded ${restTimeSeconds === 120 ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
-                >
-                  120s
-                </button>
-                <button
-                  onClick={() => setRestTimeSeconds(180)}
-                  className={`px-4 py-2 rounded ${restTimeSeconds === 180 ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
-                >
-                  180s
-                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-center gap-3 mb-6">
+              <div className="bg-gray-700 rounded-lg p-4 flex items-center gap-3">
+                <label className="text-gray-300 text-sm">Or enter custom minutes:</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="60"
+                  placeholder="e.g. 2.5"
+                  step="0.5"
+                  onChange={(e) => {
+                    const minutes = parseFloat(e.target.value)
+                    if (!isNaN(minutes) && minutes > 0) {
+                      setRestTimeSeconds(Math.round(minutes * 60))
+                    }
+                  }}
+                  className="w-24 p-2 rounded bg-gray-600 text-white text-center"
+                />
+                <span className="text-gray-300 text-sm">min</span>
               </div>
             </div>
 
-            {/* Exercise Selection */}
-            <div className="bg-gray-800 p-6 rounded-lg mb-6">
-              <label className="block text-white text-lg font-semibold mb-3">
-                Select Exercise:
-              </label>
-              <div className="flex gap-2 items-center">
-                <select
-                  value={selectedExerciseName}
-                  onChange={(e) => selectExercise(e.target.value)}
-                  className="flex-1 p-3 rounded bg-gray-700 text-white text-lg"
-                >
-                  <option value="">-- Choose Exercise --</option>
-                  {[...COMMON_EXERCISES, ...customExercises]
-                    .filter((v, i, a) => a.indexOf(v) === i)
-                    .sort()
-                    .map(exercise => (
-                      <option key={exercise} value={exercise}>{exercise}</option>
-                    ))}
-                </select>
-                <button
-                  onClick={() => setShowAddExercise(!showAddExercise)}
-                  className="bg-gray-700 text-white px-4 py-3 rounded hover:bg-gray-600 text-xl"
-                >
-                  +
-                </button>
-              </div>
+            <p className="text-yellow-400 text-sm mb-4">
+              Selected: {restTimeSeconds < 60 ? `${restTimeSeconds}s` : `${(restTimeSeconds / 60).toFixed(1)} minutes`}
+            </p>
 
-              {showAddExercise && (
-                <div className="flex gap-2 mt-2">
-                  <input
-                    type="text"
-                    value={newExerciseName}
-                    onChange={(e) => setNewExerciseName(e.target.value)}
-                    placeholder="Exercise name..."
-                    className="flex-1 p-3 rounded bg-gray-700 text-white"
-                  />
-                  <button
-                    onClick={handleAddExercise}
-                    className="bg-green-600 text-white px-4 py-3 rounded hover:bg-green-700"
+            <button
+              onClick={() => setRestTimeSelected(true)}
+              className="bg-green-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-green-700"
+            >
+              Continue to Exercise Selection →
+            </button>
+            </div>
+          ) : (
+            <>
+              {/* Exercise Selection */}
+              <div className="bg-gray-800 p-6 rounded-lg mb-6">
+                <label className="block text-white text-lg font-semibold mb-3">
+                  Select Exercise:
+                </label>
+                <div className="flex gap-2 items-center">
+                  <select
+                    value={selectedExerciseName}
+                    onChange={(e) => selectExercise(e.target.value)}
+                    className="flex-1 p-3 rounded bg-gray-700 text-white text-lg"
                   >
-                    Add
-                  </button>
+                    <option value="">-- Choose Exercise --</option>
+                    {[...COMMON_EXERCISES, ...customExercises]
+                      .filter((v, i, a) => a.indexOf(v) === i)
+                      .sort()
+                      .map(exercise => (
+                        <option key={exercise} value={exercise}>{exercise}</option>
+                      ))}
+                  </select>
                   <button
-                    onClick={() => setShowAddExercise(false)}
-                    className="bg-gray-700 text-white px-4 py-3 rounded hover:bg-gray-600"
+                    onClick={() => setShowAddExercise(!showAddExercise)}
+                    className="bg-gray-700 text-white px-4 py-3 rounded hover:bg-gray-600 text-xl"
                   >
-                    Cancel
+                    +
                   </button>
                 </div>
-              )}
-            </div>
-          </>
-        )}
+
+                {showAddExercise && (
+                  <div className="flex gap-2 mt-2">
+                    <input
+                      type="text"
+                      value={newExerciseName}
+                      onChange={(e) => setNewExerciseName(e.target.value)}
+                      placeholder="Exercise name..."
+                      className="flex-1 p-3 rounded bg-gray-700 text-white"
+                    />
+                    <button
+                      onClick={handleAddExercise}
+                      className="bg-green-600 text-white px-4 py-3 rounded hover:bg-green-700"
+                    >
+                      Add
+                    </button>
+                    <button
+                      onClick={() => setShowAddExercise(false)}
+                      className="bg-gray-700 text-white px-4 py-3 rounded hover:bg-gray-600"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </>
+      )}
 
         {/* Exercise Selected - Show Logging Interface */}
         {currentExercise && (

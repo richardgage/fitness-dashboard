@@ -10,11 +10,18 @@ This project demonstrates professional full-stack development through a real-wor
 
 ## Features
 
+### User Authentication
+- **Account Registration** - Create an account with email and password
+- **Secure Login** - JWT-based sessions via NextAuth.js
+- **Protected Routes** - Gym and dashboard pages require authentication
+- **User Isolation** - Each user only sees their own workout data
+
 ### Real-Time Workout Tracking
 - **Active Session Management** - Start workout, log exercises in real-time, end session
-- **Exercise Selection** - Quick dropdown selection from common exercises
+- **Exercise Selection** - Quick dropdown selection from 31 common exercises
+- **Custom Exercises** - Create and save your own exercises
 - **Set Logging** - Track weight (lbs) and reps for each set
-- **Rest Timer** - Configurable countdown timer (60s, 90s, 120s, 180s) between sets
+- **Rest Timer** - Configurable countdown timer (60s, 90s, 120s, 180s) with audio notification
 - **Previous Workout Reference** - Automatically displays your last performance for the selected exercise
 - **Session State Persistence** - Resume active workouts even after closing the browser
 
@@ -22,13 +29,15 @@ This project demonstrates professional full-stack development through a real-wor
 - **Complete Workout History** - View all past training sessions
 - **Detailed Workout View** - See every exercise, set, weight, and rep from any session
 - **Volume Calculations** - Total weight lifted per exercise and workout
-- **Performance Tracking** - Compare current performance to previous sessions
+- **Session Duration** - Tracks workout length in hours and minutes
 
-### Dashboard & Analytics
-- **Aggregate Statistics** - Total sessions, volume, sets, and unique exercises
-- **Volume Trends** - Area chart tracking session volume over time
+### Dashboard
+- **Aggregate Statistics** - Total sessions, this week/month counts, total volume, heaviest lift
+- **Volume Trends** - Area chart tracking session volume over last 20 sessions
+- **Monthly Volume** - Bar chart breakdown by month (last 6 months)
 - **Exercise Frequency** - Pie chart showing most-used exercises
-- **Weekly/Monthly Summaries** - Sessions and volume breakdowns by time period
+- **Top Exercises by Volume** - Horizontal bar chart of top 6 exercises
+- **Recent Workouts** - Quick links to 5 most recent sessions
 
 ### Data Management
 - **Full CRUD Operations** - Create, read, update, and delete workouts
@@ -39,28 +48,32 @@ This project demonstrates professional full-stack development through a real-wor
 ### Frontend
 - **Next.js 16** (App Router)
 - **React 19** with TypeScript
-- **Recharts** for data visualization
-- **Tailwind CSS** for styling
-- Client-side state management for active workouts
+- **Recharts 3** for data visualization
+- **Tailwind CSS 4** for styling
 
 ### Backend
 - **Next.js API Routes** (serverless functions)
-- **PostgreSQL** via Vercel Postgres (cloud database)
-- RESTful API design
+- **NextAuth.js** for authentication
+- **bcryptjs** for password hashing
+- **PostgreSQL** via Vercel Postgres
 
 ### Database Design
-Three-table normalized structure demonstrating proper database design:
+Normalized relational structure:
 ```
+users
+    ↓ one-to-many
 gym_sessions (workout metadata)
     ↓ one-to-many
 gym_exercises (exercises within a session)
     ↓ one-to-many
 gym_sets (individual sets with weight/reps)
+
+users
+    ↓ one-to-many
+user_exercises (custom saved exercises)
 ```
 
-This normalization eliminates data redundancy and enables efficient querying at multiple levels of granularity.
-
-### Deployment & CI/CD
+### Deployment
 - **Vercel** for hosting with automatic deployments
 - **GitHub** for version control
 - Continuous deployment on every push to main
@@ -69,7 +82,7 @@ This normalization eliminates data redundancy and enables efficient querying at 
 
 ### Prerequisites
 - Node.js 18+
-- PostgreSQL database (or Neon account)
+- PostgreSQL database (or Vercel Postgres)
 
 ### Installation
 
@@ -95,6 +108,8 @@ POSTGRES_USER="your_user"
 POSTGRES_HOST="your_host"
 POSTGRES_PASSWORD="your_password"
 POSTGRES_DATABASE="your_database"
+NEXTAUTH_SECRET="your_nextauth_secret"
+NEXTAUTH_URL="http://localhost:3000"
 ```
 
 4. Initialize the database
@@ -113,13 +128,14 @@ Visit [http://localhost:3000](http://localhost:3000)
 ## Usage
 
 ### Starting a Workout
-1. Navigate to **Gym** from the homepage
-2. Click **Start New Workout**
-3. Select an exercise from the dropdown
-4. Enter weight and reps for your first set
-5. Click **Do Another Set** or **Switch Exercise**
-6. Rest timer starts automatically after each set
-7. Click **End Workout** when finished
+1. Log in or create an account
+2. Navigate to **Gym** from the homepage
+3. Click **Start New Workout**
+4. Select an exercise from the dropdown (or create a custom one)
+5. Enter weight and reps for your first set
+6. Click **Do Another Set** or **Switch Exercise**
+7. Rest timer starts automatically after each set
+8. Click **End Workout** when finished
 
 ### Viewing History
 - Click **Show Workout History** from the Gym landing page
@@ -129,32 +145,50 @@ Visit [http://localhost:3000](http://localhost:3000)
 ```
 fitness-dashboard/
 ├── app/
-│   ├── api/              # API routes
-│   │   ├── gym/          # Gym workout CRUD endpoints
-│   │   ├── init-gym/     # Database initialization
-│   │   └── feedback/     # User feedback endpoints
-│   ├── gym/              # Gym tracking pages
-│   │   ├── page.tsx      # Landing page
-│   │   ├── active/       # Active workout interface
-│   │   ├── history/      # Workout history list
-│   │   └── workout/[id]/ # Individual workout details
-│   ├── dashboard/        # Analytics dashboard
-│   ├── feedback/         # User feedback form
-│   ├── admin/            # Admin pages
-│   │   └── feedback/     # View feedback submissions
-│   └── layout.tsx        # Root layout with navigation
+│   ├── page.tsx              # Home landing page
+│   ├── layout.tsx            # Root layout with Nav + Providers
+│   ├── NavBar.tsx            # Navigation component
+│   ├── Providers.tsx         # NextAuth SessionProvider
+│   ├── gym/                  # Gym tracking pages
+│   │   ├── page.tsx          # Landing page
+│   │   ├── active/           # Active workout interface
+│   │   ├── history/          # Workout history list
+│   │   └── workout/[id]/     # Individual workout details
+│   ├── dashboard/            # Analytics dashboard
+│   ├── login/                # Login page
+│   ├── register/             # Registration page
+│   ├── feedback/             # User feedback form
+│   ├── admin/
+│   │   └── feedback/         # View feedback submissions
+│   └── api/
+│       ├── auth/[...nextauth]/ # NextAuth handler + config
+│       ├── gym/              # Workout CRUD endpoints
+│       ├── register/         # User registration
+│       ├── feedback/         # Feedback endpoints
+│       └── init-gym/         # Database initialization
 ├── lib/
-│   └── db.ts            # Database utility functions
+│   └── db.ts                 # Database utility functions
+├── middleware.ts              # Route protection
 └── README.md
 ```
 
 ## Database Schema
 
+### users
+```sql
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
 ### gym_sessions
-Stores workout session metadata
 ```sql
 CREATE TABLE gym_sessions (
   id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id),
   date DATE NOT NULL,
   start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   end_time TIMESTAMP,
@@ -164,7 +198,6 @@ CREATE TABLE gym_sessions (
 ```
 
 ### gym_exercises
-Links exercises to sessions
 ```sql
 CREATE TABLE gym_exercises (
   id SERIAL PRIMARY KEY,
@@ -175,7 +208,6 @@ CREATE TABLE gym_exercises (
 ```
 
 ### gym_sets
-Records individual sets
 ```sql
 CREATE TABLE gym_sets (
   id SERIAL PRIMARY KEY,
@@ -187,26 +219,15 @@ CREATE TABLE gym_sets (
 );
 ```
 
-## Design Decisions
-
-### Why Focus on Gym Tracking?
-
-Decided to build one feature comprehensively rather than many features superficially. The gym tracker showcases:
-
-- **Complex data relationships** - Three-table normalized structure with foreign keys
-- **Real-time state management** - Active workout session persists across page refreshes
-- **Practical UX design** - Built for actual use during workouts (rest timer, quick logging)
-- **Progressive feature development** - Started with core functionality, iteratively added features
-
-This approach demonstrates depth of technical understanding and product thinking more effectively than building multiple simple CRUD interfaces.
-
-### Technical Highlights
-
-**Database Normalization**: Properly normalized schema eliminates redundancy and enables flexible querying. For example, retrieving all bench press workouts across all sessions requires a simple JOIN rather than parsing denormalized data.
-
-**Serverless Architecture**: Next.js API routes provide a scalable backend without managing servers. Each API endpoint is an independent serverless function.
-
-**Type Safety**: TypeScript throughout the stack catches errors at compile-time and improves developer experience with autocomplete and type inference.
+### user_exercises
+```sql
+CREATE TABLE user_exercises (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id),
+  exercise_name VARCHAR(100) NOT NULL,
+  UNIQUE(user_id, exercise_name)
+);
+```
 
 ## Future Enhancements
 
@@ -215,36 +236,17 @@ This approach demonstrates depth of technical understanding and product thinking
 - [ ] Workout templates (save and reuse common routines)
 - [ ] Plate calculator (what plates = target weight?)
 - [ ] Superset support (track multiple exercises in rotation)
-- [ ] Mobile app (React Native/Progressive Web App)
+- [ ] Mobile optimization / Progressive Web App
 - [ ] Exercise library with instructions/videos
 - [ ] Body part frequency tracking
-
-## Development Methodology
-
-This project demonstrates professional software engineering practices:
-
-- **Requirements Engineering** - Conducted user surveys to validate features
-- **Iterative Development** - Built and deployed incrementally
-- **Version Control** - Clean Git history with meaningful commits
-- **CI/CD** - Automatic deployments via Vercel on every push
-- **Database Design** - Normalized schema following best practices
-- **API Design** - RESTful endpoints with proper HTTP methods
 
 ## Author
 
 **Richard Gage**
 - Computer Science Graduate, University of Victoria (2025)
 - GitHub: [@richardgage](https://github.com/richardgage)
-- Portfolio: [Live Demo](https://your-vercel-url.vercel.app)
+- Portfolio: [Live Demo](https://fitness-dashboard-pearl.vercel.app/)
 
 ## License
 
 This project is open source and available under the MIT License.
-
-## Acknowledgments
-
-Built as a portfolio project demonstrating full-stack development capabilities. The project showcases practical problem-solving, database design, and production-ready code quality.
-
----
-
-**Note**: This application is optimized for desktop/laptop use. Mobile optimization is planned for future releases.
