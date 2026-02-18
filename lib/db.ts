@@ -83,13 +83,18 @@ export async function createGymTables() {
 }
 
 // Start a new gym session
-export async function startGymSession(date: string) {
-  const result = await sql`
-    INSERT INTO gym_sessions (date, start_time)
-    VALUES (${date}, CURRENT_TIMESTAMP)
+export async function startGymSession(date: string, userId: number) {
+  try {
+    const result = await sql`
+    INSERT INTO gym_sessions (date, start_time, user_id)
+    VALUES (${date}, CURRENT_TIMESTAMP, ${userId})
     RETURNING *
   `;
   return result.rows[0];
+} catch (error) {
+  console.error('Error starting gym session:', error);
+  throw error;
+}
 }
 
 // End a gym session
@@ -124,10 +129,10 @@ export async function addSetToExercise(exerciseId: number, setNumber: number, we
 }
 
 // Get active session (not ended)
-export async function getActiveSession() {
+export async function getActiveSession(userId: number) {
   const result = await sql`
     SELECT * FROM gym_sessions 
-    WHERE end_time IS NULL 
+    WHERE end_time IS NULL AND user_id = ${userId}
     ORDER BY start_time DESC 
     LIMIT 1
   `;
@@ -165,7 +170,7 @@ export async function getSessionDetails(sessionId: number) {
 }
 
 // Get all past sessions
-export async function getAllGymSessions() {
+export async function getAllGymSessions(userId: number) {
   const result = await sql`
     SELECT 
       s.*,
@@ -175,6 +180,7 @@ export async function getAllGymSessions() {
     LEFT JOIN gym_exercises e ON s.id = e.session_id
     LEFT JOIN gym_sets se ON e.id = se.exercise_id
     WHERE s.end_time IS NOT NULL
+    AND s.user_id = ${userId}
     GROUP BY s.id
     ORDER BY s.date DESC
   `;
@@ -207,7 +213,7 @@ export async function getLastWorkoutForExercise(exerciseName: string) {
 }
 
 // Gym dashboard stats
-export async function getGymDashboardStats() {
+export async function getGymDashboardStats(userId: number) {
   const result = await sql`
     SELECT
       COUNT(DISTINCT s.id)::int as total_sessions,
@@ -222,11 +228,12 @@ export async function getGymDashboardStats() {
     LEFT JOIN gym_exercises e ON s.id = e.session_id
     LEFT JOIN gym_sets gs ON e.id = gs.exercise_id
     WHERE s.end_time IS NOT NULL
+    AND s.user_id = ${userId}
   `;
   return result.rows[0];
 }
 
-export async function getExerciseFrequency() {
+export async function getExerciseFrequency(userId: number) {
   const result = await sql`
     SELECT
       e.exercise_name as name,
@@ -237,13 +244,14 @@ export async function getExerciseFrequency() {
     JOIN gym_sessions s ON e.session_id = s.id
     LEFT JOIN gym_sets gs ON e.id = gs.exercise_id
     WHERE s.end_time IS NOT NULL
+    AND s.user_id = ${userId}
     GROUP BY e.exercise_name
     ORDER BY session_count DESC
   `;
   return result.rows;
 }
 
-export async function getVolumeOverTime() {
+export async function getVolumeOverTime(userId: number) {
   const result = await sql`
     SELECT
       s.id as session_id,
@@ -255,9 +263,50 @@ export async function getVolumeOverTime() {
     LEFT JOIN gym_exercises e ON s.id = e.session_id
     LEFT JOIN gym_sets gs ON e.id = gs.exercise_id
     WHERE s.end_time IS NOT NULL
+    AND s.user_id = ${userId}
     GROUP BY s.id, s.date
     ORDER BY s.date ASC
   `;
   return result.rows;
 }
 
+export async function createUsersTable() {
+  await sql`
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      email VARCHAR(255) UNIQUE NOT NULL,
+      password VARCHAR(255) NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `
+}
+
+export async function addUserIdToSessions() {
+  await sql`
+    ALTER TABLE gym_sessions 
+    ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id)
+  `
+}
+
+export async function createUser(email: string, hashedPassword: string) {
+  const result = await sql`
+    INSERT INTO users (email, password)
+    VALUES (${email}, ${hashedPassword})
+    RETURNING id, email, created_at
+  `
+  return result.rows[0]
+}
+
+export async function getUserByEmail(email: string) {
+  const result = await sql`
+    SELECT * FROM users WHERE email = ${email}
+  `
+  return result.rows[0] || null
+}
+
+export async function getUserIdByEmail(email: string) {
+  const result = await sql`
+    SELECT id FROM users WHERE email = ${email}
+  `
+  return result.rows[0]?.id || null
+}

@@ -67,12 +67,24 @@ export default function WorkoutDetails() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <Link 
-            href="/gym/history"
-            className="text-blue-400 hover:underline mb-4 inline-block"
-          >
-            ← Back to History
-          </Link>
+<div className="flex justify-between items-center mb-4">
+  <Link 
+    href="/gym/history"
+    className="text-blue-400 hover:underline"
+  >
+    ← Back to History
+  </Link>
+  <button
+    onClick={async () => {
+      if (!confirm('Delete this workout?')) return
+      await fetch(`/api/gym?sessionId=${params.id}`, { method: 'DELETE' })
+      router.push('/gym/history')
+    }}
+    className="bg-red-900/20 border border-red-500/30 text-red-400 hover:text-red-300 px-4 py-2 rounded-lg text-sm"
+  >
+    Delete Workout
+  </button>
+</div>
           <h1 className="text-4xl font-bold text-white mb-2">
             {new Date(workout.date).toLocaleDateString('en-US', {
               weekday: 'long',

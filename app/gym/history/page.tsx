@@ -9,6 +9,7 @@ export default function GymHistory() {
     try {
       const response = await fetch('/api/gym')
       const data = await response.json()
+      console.log('API response:', data)  // add this line
       setSessions(data)
       setLoading(false)
     } catch (error) {
@@ -85,6 +86,7 @@ export default function GymHistory() {
                   Click to view details →
                 </div>
               </Link>
+             
             ))}
           </div>
         )}

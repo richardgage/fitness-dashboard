@@ -228,25 +228,24 @@ export default function GymWorkout() {
     skipRest() // Stop rest timer if running
   }
 
-  const endWorkout = async () => {
-    if (!confirm('End this workout?')) return
-
-    try {
-      await fetch('/api/gym', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId: activeSession.id,
-          notes: workoutNotes
-        })
+const endWorkout = async () => {
+  if (!confirm('End this workout?')) return
+  try {
+    await fetch('/api/gym', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'endSession',
+        sessionId: activeSession.id,
+        notes: workoutNotes
       })
-      
-      alert('Workout completed! 🎉')
-      window.location.href = '/gym/history'
-    } catch (error) {
-      console.error('Error ending workout:', error)
-    }
+    })
+    alert('Workout completed! 🎉')
+    window.location.href = '/gym/history'
+  } catch (error) {
+    console.error('Error ending workout:', error)
   }
+}
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
@@ -395,7 +394,7 @@ export default function GymWorkout() {
                   Last time ({new Date(lastWorkout.date).toLocaleDateString()}):
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {lastWorkout.sets.map((set: any, idx: number) => (
+                  {lastWorkout.sets && lastWorkout.sets.map((set: any, idx: number) => (
                     <span key={idx} className="text-gray-300 text-sm bg-gray-600 px-2 py-1 rounded">
                       {set.weight} lbs × {set.reps}
                     </span>

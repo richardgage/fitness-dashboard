@@ -1,115 +1,135 @@
+import { NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
 import {
-    startGymSession,
-    endGymSession,
-    getActiveSession,
-    getSessionDetails,
-    getAllGymSessions,
-    addExerciseToSession,
-    addSetToExercise,
-    getLastWorkoutForExercise,
-    getGymDashboardStats,
-    getExerciseFrequency,
-    getVolumeOverTime
-  } from '@/lib/db';
-  import { NextResponse } from 'next/server';
-  
-  // GET active session or all sessions
-  export async function GET(request: Request) {
-    try {
-      const { searchParams } = new URL(request.url);
-      const action = searchParams.get('action');
-      const sessionId = searchParams.get('sessionId');
-      const exerciseName = searchParams.get('exerciseName');
-  
-      if (action === 'active') {
-        const session = await getActiveSession();
-        if (session) {
-          const details = await getSessionDetails(session.id);
-          return NextResponse.json(details);
-        }
-        return NextResponse.json(null);
-      }
-  
-      if (action === 'details' && sessionId) {
-        const details = await getSessionDetails(parseInt(sessionId));
-        return NextResponse.json(details);
-      }
-  
-      if (action === 'dashboardStats') {
-        const [stats, exerciseFrequency, volumeOverTime, recentSessions] = await Promise.all([
-          getGymDashboardStats(),
-          getExerciseFrequency(),
-          getVolumeOverTime(),
-          getAllGymSessions()
-        ]);
-        return NextResponse.json({
-          stats,
-          exerciseFrequency,
-          volumeOverTime,
-          recentSessions: recentSessions.slice(0, 5)
-        });
-      }
+  getAllGymSessions,
+  getSessionDetails,
+  startGymSession,
+  endGymSession,
+  addExerciseToSession,
+  addSetToExercise,
+  getActiveSession,
+  getLastWorkoutForExercise,
+  getGymDashboardStats,
+  getExerciseFrequency,
+  getVolumeOverTime,
+  getUserIdByEmail
+} from '@/lib/db'
+import { authOptions } from '@/app/api/auth/[...nextauth]/authOptions'
+import {sql} from '@vercel/postgres'
 
-      if (action === 'lastWorkout' && exerciseName) {
-        const lastWorkout = await getLastWorkoutForExercise(exerciseName);
-        return NextResponse.json(lastWorkout);
-      }
-  
-      // Default: get all past sessions
-      const sessions = await getAllGymSessions();
-      return NextResponse.json(sessions);
-    } catch (error) {
-      console.error('Error fetching gym data:', error);
-      return NextResponse.json({ error: 'Failed to fetch gym data' }, { status: 500 });
-    }
+
+async function getUserId() {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.email) return null
+  return await getUserIdByEmail(session.user.email)
+}
+
+export async function GET(request: Request) {
+  const userId = await getUserId()
+  if (!userId) {
+    return NextResponse.json({ error: 'Not logged in' }, { status: 401 })
   }
-  
-  // POST - Start session, add exercise, or add set
-  export async function POST(request: Request) {
-    try {
-      const body = await request.json();
-      const { action } = body;
-  
-      if (action === 'startSession') {
-        const session = await startGymSession(body.date);
-        return NextResponse.json(session);
-      }
-  
-      if (action === 'addExercise') {
-        const exercise = await addExerciseToSession(
-          body.sessionId,
-          body.exerciseName,
-          body.order
-        );
-        return NextResponse.json(exercise);
-      }
-  
-      if (action === 'addSet') {
-        const set = await addSetToExercise(
-          body.exerciseId,
-          body.setNumber,
-          body.weight,
-          body.reps
-        );
-        return NextResponse.json(set);
-      }
-  
-      return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
-    } catch (error) {
-      console.error('Error in gym POST:', error);
-      return NextResponse.json({ error: 'Failed to process request' }, { status: 500 });
+
+  const { searchParams } = new URL(request.url)
+  const action = searchParams.get('action')
+  const sessionId = searchParams.get('sessionId')
+  const exerciseName = searchParams.get('exercise')
+
+  try {
+    if (action === 'details' && sessionId) {
+      const data = await getSessionDetails(parseInt(sessionId))
+      return NextResponse.json(data)
     }
-  }
-  
-  // PUT - End session
-  export async function PUT(request: Request) {
-    try {
-      const body = await request.json();
-      const { sessionId, notes } = body;
-      const session = await endGymSession(sessionId, notes);
-      return NextResponse.json(session);
-    } catch (error) {
-      console.error('Error ending session:', error);
-      return NextResponse.json({ error: 'Failed to end session' }, { status: 500 });
+
+    if (action === 'active') {
+      const data = await getActiveSession(userId)
+      return NextResponse.json(data)
     }
+
+    if (action === 'lastWorkout' && exerciseName) {
+      const data = await getLastWorkoutForExercise(exerciseName)
+      return NextResponse.json(data)
+    }
+
+    if (action === 'dashboardStats') {
+      const [stats, exerciseFrequency, volumeOverTime, recentSessions] = await Promise.all([
+        getGymDashboardStats(userId),
+        getExerciseFrequency(userId),
+        getVolumeOverTime(userId),
+        getAllGymSessions(userId)
+      ])
+      return NextResponse.json({
+        stats,
+        exerciseFrequency,
+        volumeOverTime,
+        recentSessions: recentSessions.slice(0, 5)
+      })
+    }
+
+    const data = await getAllGymSessions(userId)
+    return NextResponse.json(data)
+  } catch (error) {
+    console.error('Gym API error:', error)  // add this line
+    return NextResponse.json({ error: 'Database error' }, { status: 500 })
   }
+}
+
+export async function POST(request: Request) {
+  const userId = await getUserId()
+  console.log('POST userId:', userId)  // add this
+  if (!userId) {
+    return NextResponse.json({ error: 'Not logged in' }, { status: 401 })
+  }
+
+  const body = await request.json()
+  const { action } = body
+
+  try {
+    if (action === 'startSession') {
+      console.log('Starting session with userId:', userId)  // add this
+      const data = await startGymSession(body.date, userId)
+      console.log('Session created:', data)  // add this
+      return NextResponse.json(data)
+    }
+
+    if (action === 'endSession') {
+      const data = await endGymSession(body.sessionId, body.notes)
+      return NextResponse.json(data)
+    }
+
+    if (action === 'addExercise') {
+      const data = await addExerciseToSession(body.sessionId, body.exerciseName, body.order)
+      return NextResponse.json(data)
+    }
+
+    if (action === 'addSet') {
+      const data = await addSetToExercise(body.exerciseId, body.setNumber, body.weight, body.reps)
+      return NextResponse.json(data)
+    }
+
+    return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
+  } catch (error) {
+    return NextResponse.json({ error: 'Database error' }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: Request) {
+  const userId = await getUserId()
+  if (!userId) {
+    return NextResponse.json({ error: 'Not logged in' }, { status: 401 })
+  }
+
+  const { searchParams } = new URL(request.url)
+  const sessionId = searchParams.get('sessionId')
+
+  if (!sessionId) {
+    return NextResponse.json({ error: 'No session ID provided' }, { status: 400 })
+  }
+
+  try {
+    await sql`DELETE FROM gym_sessions WHERE id = ${parseInt(sessionId)} AND user_id = ${userId}`
+    return NextResponse.json({ message: 'Workout deleted' })
+  } catch (error) {
+    return NextResponse.json({ error: 'Database error' }, { status: 500 })
+  }
+}
