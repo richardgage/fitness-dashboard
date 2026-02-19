@@ -182,7 +182,6 @@ export default function GymWorkout() {
     try {
       const response = await fetch(`/api/gym?action=lastWorkout&exerciseName=${encodeURIComponent(exerciseName)}`)
       const data = await response.json()
-      console.log('-------------------------LastWorkout data:', data)  // add this
       setLastWorkout(data)
     } catch (error) {
       console.error('Error fetching last workout:', error)
@@ -477,7 +476,7 @@ const endWorkout = async () => {
               <h2 className="text-2xl font-bold text-white">{currentExercise.exercise_name}</h2>
               <button
                 onClick={switchExercise}
-                className="bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
+                className="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-600"
               >
                 Switch Exercise
               </button>
@@ -524,12 +523,12 @@ const endWorkout = async () => {
 
             {/* Add Set Form */}
             <div className="border-t border-gray-700 pt-4">
-              <p className="text-white font-semibold mb-3">
-                {currentExercise.sets && currentExercise.sets.length > 0 ? 'Next Set:' : 'First Set:'}
+              <p className="text-white text-xl font-semibold mb-3">
+                {currentExercise.sets && currentExercise.sets.length > 0 ? 'Enter' : 'Log your lift below'}
               </p>
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-gray-400 text-sm mb-2">Weight (lbs)</label>
+                  <label className="block text-white text-m mb-2">Weight (lbs)</label>
                   <input
                     type="number"
                     value={weight}
@@ -540,7 +539,7 @@ const endWorkout = async () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-gray-400 text-sm mb-2">Reps</label>
+                  <label className="block text-white text-m mb-2">Reps</label>
                   <input
                     type="number"
                     value={reps}
