@@ -2,7 +2,7 @@
 
 A full-stack web application for comprehensive strength training tracking with detailed exercise, set, and rep logging. Built with Next.js, React, TypeScript, and PostgreSQL.
 
-🔗 **Live Demo**: [fitness-dashboard-pearl.vercel.app](https://fitness-dashboard-pearl.vercel.app/)
+🔗 **Live Demo**: [setsandreps.vercel.app](https://setsandreps.vercel.app/)
 
 ## Overview
 
@@ -21,7 +21,7 @@ This project demonstrates professional full-stack development through a real-wor
 - **Exercise Selection** - Quick dropdown selection from 31 common exercises
 - **Custom Exercises** - Create and save your own exercises
 - **Set Logging** - Track weight (lbs) and reps for each set
-- **Rest Timer** - Configurable countdown timer (60s, 90s, 120s, 180s) with audio notification
+- **Rest Timer** - Configurable countdown timer with audio notification
 - **Previous Workout Reference** - Automatically displays your last performance for the selected exercise
 - **Session State Persistence** - Resume active workouts even after closing the browser
 
@@ -56,6 +56,22 @@ This project demonstrates professional full-stack development through a real-wor
 - **NextAuth.js** for authentication
 - **bcryptjs** for password hashing
 - **PostgreSQL** via Vercel Postgres
+
+## Usage
+
+### Starting a Workout
+1. Log in or create an account
+2. Navigate to **Gym** from the homepage
+3. Click **Start New Workout**
+4. Select an exercise from the dropdown (or create a custom one)
+5. Enter weight and reps for your first set
+6. Click **Do Another Set** or **Switch Exercise**
+7. Rest timer starts automatically after each set
+8. Click **End Workout** when finished
+
+### Viewing History
+- Click **Show Workout History** from the Gym landing page
+- Click any workout to see full details (all exercises and sets)
 
 ### Database Design
 Normalized relational structure:
@@ -125,21 +141,6 @@ npm run dev
 
 Visit [http://localhost:3000](http://localhost:3000)
 
-## Usage
-
-### Starting a Workout
-1. Log in or create an account
-2. Navigate to **Gym** from the homepage
-3. Click **Start New Workout**
-4. Select an exercise from the dropdown (or create a custom one)
-5. Enter weight and reps for your first set
-6. Click **Do Another Set** or **Switch Exercise**
-7. Rest timer starts automatically after each set
-8. Click **End Workout** when finished
-
-### Viewing History
-- Click **Show Workout History** from the Gym landing page
-- Click any workout to see full details (all exercises and sets)
 
 ## Project Structure
 ```
