@@ -295,9 +295,9 @@ const endWorkout = async () => {
     return (
       <div className="min-h-screen bg-gray-900 p-8">
         <div className="max-w-2xl mx-auto">
-          <h1 className="text-4xl font-bold text-white mb-8">Gym Workout</h1>
+          <h1 className="text-4xl font-bold text-white text-center mb-8">Gym Workout</h1>
           <div className="bg-gray-800 p-8 rounded-lg text-center">
-            <p className="text-gray-300 mb-6">Ready to start your workout?</p>
+            <p className="text-gray-300 font-semibold mb-6">Click Below to Start Your Workout Timer</p>
             <button
               onClick={startWorkout}
               className="bg-green-600 text-white px-8 py-4 rounded-lg text-xl font-semibold hover:bg-green-700"
@@ -484,7 +484,7 @@ const endWorkout = async () => {
 
             {/* Last Workout Info */}
             {lastWorkout && (
-              <div className="bg-black border border-blue-500/40 p-4 rounded mb-4">
+              <div className="bg-black border border-blue-500/40 p-4 rounded mb-2">
                 <p className="text-white text-xs font-semibold uppercase tracking-wider mb-3">
                   Last Session — {(() => {
                     const days = Math.floor((new Date().getTime() - new Date(lastWorkout.date).getTime()) / (1000 * 60 * 60 * 24))

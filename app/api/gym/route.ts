@@ -82,7 +82,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const userId = await getUserId()
-  console.log('POST userId:', userId)  // add this
+ // console.log('POST userId:', userId)  // add this
   if (!userId) {
     return NextResponse.json({ error: 'Not logged in' }, { status: 401 })
   }
@@ -92,9 +92,9 @@ export async function POST(request: Request) {
 
   try {
     if (action === 'startSession') {
-      console.log('Starting session with userId:', userId)  // add this
+    //  console.log('Starting session with userId:', userId)
       const data = await startGymSession(body.date, userId)
-      console.log('Session created:', data)  // add this
+    //  console.log('Session created:', data)
       return NextResponse.json(data)
     }
 

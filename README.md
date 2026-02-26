@@ -1,12 +1,8 @@
 # Gym Training Tracker
 
-A full-stack web application for comprehensive strength training tracking with detailed exercise, set, and rep logging. Built with Next.js, React, TypeScript, and PostgreSQL.
+A full-stack web application I created for tracking strength training at the gym. It has detailed exercise, set, and rep logging, with viewable data metrics. Built with Next.js, React, TypeScript, and PostgreSQL.
 
-🔗 **Live Demo**: [setsandreps.vercel.app](https://setsandreps.vercel.app/)
-
-## Overview
-
-This project demonstrates professional full-stack development through a real-world application I built to solve my own gym tracking needs. The focus is on depth over breadth - building one feature comprehensively rather than many features superficially.
+**The Website**: [setsandreps.vercel.app](https://setsandreps.vercel.app/)
 
 ## Features
 
