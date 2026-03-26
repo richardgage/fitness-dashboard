@@ -486,7 +486,7 @@ const endWorkout = async () => {
             {lastWorkout && (
               <div className="bg-black border border-blue-500/40 p-4 rounded mb-2">
                 <p className="text-white text-xs font-semibold uppercase tracking-wider mb-3">
-                  Last Session — {(() => {
+                  Last Did This Exercise — {(() => {
                     const days = Math.floor((new Date().getTime() - new Date(lastWorkout.date).getTime()) / (1000 * 60 * 60 * 24))
                     if (days === 0) return 'Today'
                     if (days === 1) return 'Yesterday'

@@ -104,15 +104,11 @@ export default function Dashboard() {
         {/* Stats Cards Row 1 */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
           <div className="bg-gray-800 p-6 rounded-lg">
-            <p className="text-gray-400 text-sm uppercase mb-2">Total Workouts</p>
-            <p className="text-white text-3xl font-bold">{stats.total_sessions}</p>
-          </div>
-          <div className="bg-gray-800 p-6 rounded-lg">
-            <p className="text-gray-400 text-sm uppercase mb-2">This Week</p>
+            <p className="text-gray-400 text-sm uppercase mb-2">Total Workouts This Week</p>
             <p className="text-white text-3xl font-bold">{stats.sessions_this_week}</p>
           </div>
           <div className="bg-gray-800 p-6 rounded-lg">
-            <p className="text-gray-400 text-sm uppercase mb-2">This Month</p>
+            <p className="text-gray-400 text-sm uppercase mb-2">Total Workouts This Month</p>
             <p className="text-white text-3xl font-bold">{stats.sessions_this_month}</p>
           </div>
           <div className="bg-gray-800 p-6 rounded-lg">
@@ -126,10 +122,6 @@ export default function Dashboard() {
           <div className="bg-gradient-to-br from-blue-900/50 to-gray-800 p-6 rounded-lg border border-blue-500/30">
             <p className="text-blue-300 text-sm uppercase mb-2">Volume This Week</p>
             <p className="text-white text-3xl font-bold">{formatVolume(volumeThisWeek)}</p>
-          </div>
-          <div className="bg-gradient-to-br from-green-900/50 to-gray-800 p-6 rounded-lg border border-green-500/30">
-            <p className="text-green-300 text-sm uppercase mb-2">Total Sets</p>
-            <p className="text-white text-3xl font-bold">{stats.total_sets}</p>
           </div>
           <div className="bg-gradient-to-br from-purple-900/50 to-gray-800 p-6 rounded-lg border border-purple-500/30">
             <p className="text-purple-300 text-sm uppercase mb-2">Heaviest Lift</p>
