@@ -27,8 +27,9 @@ export default function NavBar() {
           <div className="hidden md:flex gap-6 items-center">
             {session ? (
               <>
-                <Link href="/dashboard" className="text-gray-300 hover:text-white transition-colors">Dashboard</Link>
-                <Link href="/gym" className="text-gray-300 hover:text-white transition-colors">Gym</Link>
+                <Link href="/dashboard" className="text-gray-300 hover:text-white transition-colors">Visual Stats</Link>
+                <Link href="/gym/active" className="text-gray-300 hover:text-white transition-colors">Start Workout</Link>
+                <Link href="/gym/history" className="text-gray-300 hover:text-white transition-colors">Gym History</Link>
                 <Link href="/feedback" className="text-gray-300 hover:text-white transition-colors">Feedback</Link>
                 <span className="text-gray-500 text-sm">{session.user?.email}</span>
                 <button
@@ -53,8 +54,9 @@ export default function NavBar() {
             {session ? (
               <>
                 <p className="text-gray-500 text-sm px-2 pb-2">{session.user?.email}</p>
-                <Link href="/dashboard" onClick={() => setMenuOpen(false)} className="block text-gray-300 hover:text-white py-2 px-2">Dashboard</Link>
-                <Link href="/gym" onClick={() => setMenuOpen(false)} className="block text-gray-300 hover:text-white py-2 px-2">Gym</Link>
+                <Link href="/dashboard" onClick={() => setMenuOpen(false)} className="block text-gray-300 hover:text-white py-2 px-2">Visual Stats</Link>
+                <Link href="/gym/active" onClick={() => setMenuOpen(false)} className="block text-gray-300 hover:text-white py-2 px-2">Start Workout</Link>
+                <Link href="/gym/history" onClick={() => setMenuOpen(false)} className="block text-gray-300 hover:text-white py-2 px-2">GymHistory</Link>
                 <Link href="/feedback" onClick={() => setMenuOpen(false)} className="block text-gray-300 hover:text-white py-2 px-2">Feedback</Link>
                 <button
                   onClick={() => signOut({ callbackUrl: '/login' })}
