@@ -345,3 +345,106 @@ export async function createUserExercisesTable() {
     )
   `
 }
+
+export async function createFriendRequestsTable() {
+  await sql`
+    CREATE TABLE IF NOT EXISTS friend_requests (
+      id SERIAL PRIMARY KEY,
+      sender_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      receiver_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      status VARCHAR(20) DEFAULT 'pending',
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(sender_id, receiver_id)
+    )
+  `
+}
+
+export async function sendFriendRequest(senderId: number, receiverId: number) {
+  const result = await sql`
+    INSERT INTO friend_requests (sender_id, receiver_id)
+    VALUES (${senderId}, ${receiverId})
+    ON CONFLICT DO NOTHING
+    RETURNING *
+  `
+  return result.rows[0]
+}
+
+export async function acceptFriendRequest(requestId: number, userId: number) {
+  const result = await sql`
+    UPDATE friend_requests
+    SET status = 'accepted'
+    WHERE id = ${requestId}
+    AND receiver_id = ${userId}
+    RETURNING *
+  `
+  return result.rows[0]
+}
+
+export async function declineFriendRequest(requestId: number, userId: number) {
+  const result = await sql`
+    UPDATE friend_requests
+    SET status = 'declined'
+    WHERE id = ${requestId}
+    AND receiver_id = ${userId}
+    RETURNING *
+  `
+  return result.rows[0]
+}
+
+export async function getPendingFriendRequests(userId: number) {
+  const result = await sql`
+    SELECT fr.*, u.email as sender_email
+    FROM friend_requests fr
+    JOIN users u ON fr.sender_id = u.id
+    WHERE fr.receiver_id = ${userId}
+    AND fr.status = 'pending'
+    ORDER BY fr.created_at DESC
+  `
+  return result.rows
+}
+
+export async function getFriends(userId: number) {
+  const result = await sql`
+    SELECT u.id, u.email
+    FROM friend_requests fr
+    JOIN users u ON (
+      CASE 
+        WHEN fr.sender_id = ${userId} THEN fr.receiver_id = u.id
+        ELSE fr.sender_id = u.id
+      END
+    )
+    WHERE (fr.sender_id = ${userId} OR fr.receiver_id = ${userId})
+    AND fr.status = 'accepted'
+  `
+  return result.rows
+}
+
+export async function getFriendStats(friendId: number) {
+  const sessions = await sql`
+    SELECT
+      COUNT(DISTINCT CASE WHEN date >= CURRENT_DATE - INTERVAL '7 days' THEN id END)::int as sessions_this_week,
+      COUNT(DISTINCT CASE WHEN date >= CURRENT_DATE - INTERVAL '30 days' THEN id END)::int as sessions_this_month
+    FROM gym_sessions
+    WHERE user_id = ${friendId}
+    AND end_time IS NOT NULL
+  `
+
+  const prs = await sql`
+    SELECT
+      e.exercise_name,
+      MAX(gs.weight)::numeric as max_weight
+    FROM gym_exercises e
+    JOIN gym_sessions s ON e.session_id = s.id
+    JOIN gym_sets gs ON e.id = gs.exercise_id
+    WHERE s.user_id = ${friendId}
+    AND s.end_time IS NOT NULL
+    GROUP BY e.exercise_name
+    ORDER BY max_weight DESC
+    LIMIT 5
+  `
+
+  return {
+    sessions: sessions.rows[0],
+    prs: prs.rows
+  }
+}

@@ -16,13 +16,12 @@ export default function Home() {
       <div className="relative z-10 max-w-2xl mx-auto text-center">
 
         {/* Icon */}
-<div className="mb-6">
-  <img 
-    src="/hero-image.jpeg" 
-    alt="Gym Tracker" 
-    className="w-32 h-32 object-cover rounded-2xl mx-auto"
-  />
-</div>
+      <div className="mb-6">
+        <img 
+        src="/hero-image.jpeg" 
+        alt="Gym Tracker" 
+        className="w-32 h-32 object-cover rounded-2xl mx-auto"/>
+      </div>
 
         {/* Title */}
         <h1 className="text-6xl text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-4 leading-tight tracking-tight">

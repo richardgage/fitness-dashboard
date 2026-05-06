@@ -1,4 +1,4 @@
-import { createGymTables, createUsersTable, addUserIdToSessions, createUserExercisesTable } from '@/lib/db';
+import { createGymTables, createUsersTable, addUserIdToSessions, createUserExercisesTable, createFriendRequestsTable } from '@/lib/db';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
@@ -7,6 +7,7 @@ export async function GET() {
     await createGymTables();
     await addUserIdToSessions();
     await createUserExercisesTable();
+    await createFriendRequestsTable
     return NextResponse.json({ message: 'All tables initialized successfully' });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to initialize tables' }, { status: 500 });
