@@ -14,7 +14,8 @@ import {
   getVolumeOverTime,
   getUserIdByEmail,
   getExerciseProgression,
-  getExerciseSummary
+  getExerciseSummary,
+  getActivityFeed
 } from '@/lib/db'
 import { authOptions } from '@/app/api/auth/[...nextauth]/authOptions'
 import {sql} from '@vercel/postgres'
@@ -40,7 +41,10 @@ export async function GET(request: Request) {
 
   try {
     if (action === 'details' && sessionId) {
-      const data = await getSessionDetails(parseInt(sessionId))
+      const data = await getSessionDetails(parseInt(sessionId), userId)
+      if (!data) {
+        return NextResponse.json({ error: 'Not found' }, { status: 404 })
+      }
       return NextResponse.json(data)
     }
 
@@ -76,6 +80,11 @@ export async function GET(request: Request) {
         getExerciseSummary(userId, decodedName)
       ])
       return NextResponse.json({ progression, summary })
+    }
+
+    if (action === 'feed') {
+      const data = await getActivityFeed(userId)
+      return NextResponse.json(data)
     }
 
     if (action === 'userExercises') {

@@ -24,12 +24,67 @@ export default function Dashboard() {
   const [exerciseStats, setExerciseStats] = useState<any>(null)
   const [exerciseStatsLoading, setExerciseStatsLoading] = useState(false)
 
+  const [pendingRequests, setPendingRequests] = useState<any[]>([])
+  const [friends, setFriends] = useState<any[]>([])
+  const [friendEmail, setFriendEmail] = useState('')
+  const [friendMessage, setFriendMessage] = useState('')
+  const [friendMessageIsError, setFriendMessageIsError] = useState(false)
+
+  const loadFriendsData = () => {
+    fetch('/api/friends?action=pending')
+      .then(res => res.json())
+      .then(d => setPendingRequests(Array.isArray(d) ? d : []))
+      .catch(() => {})
+
+    fetch('/api/friends?action=friends')
+      .then(res => res.json())
+      .then(d => setFriends(Array.isArray(d) ? d : []))
+      .catch(() => {})
+  }
+
   useEffect(() => {
     fetch('/api/gym?action=dashboardStats')
       .then(res => res.json())
       .then(d => { setData(d); setLoading(false) })
       .catch(() => setLoading(false))
+
+    loadFriendsData()
   }, [])
+
+  const sendFriendRequest = async () => {
+    setFriendMessage('')
+    try {
+      const res = await fetch('/api/friends', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'sendRequest', email: friendEmail })
+      })
+      const result = await res.json()
+      if (!res.ok) {
+        setFriendMessage(result.error || 'Something went wrong')
+        setFriendMessageIsError(true)
+      } else {
+        setFriendMessage('Friend request sent')
+        setFriendMessageIsError(false)
+        setFriendEmail('')
+        loadFriendsData()
+      }
+    } catch {
+      setFriendMessage('Something went wrong')
+      setFriendMessageIsError(true)
+    }
+  }
+
+  const handleRequest = async (requestId: number, decision: 'accept' | 'decline') => {
+    try {
+      await fetch('/api/friends', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: decision, requestId })
+      })
+      loadFriendsData()
+    } catch {}
+  }
 
   useEffect(() => {
     if (!selectedExercise) return
@@ -120,16 +175,18 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-900 p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold text-white">Gym Dashboard</h1>
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-white mb-4">Gym Dashboard</h1>
           <button
             onClick={() => setShowExerciseStats(!showExerciseStats)}
-            className="bg-blue-600 text-white px-5 py-2.5 rounded-lg font-semibold hover:bg-blue-700"
+            className="bg-blue-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-700"
           >
-            {showExerciseStats ? 'Hide' : 'Stats by Exercise'}
+            {showExerciseStats ? 'Hide Stats by Exercise' : 'Stats by Exercise'}
           </button>
         </div>
 
+        {!showExerciseStats && (
+        <>
         {/* Stats Cards Row 1 */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
           <div className="bg-gray-800 p-6 rounded-lg">
@@ -161,6 +218,8 @@ export default function Dashboard() {
             <p className="text-white text-3xl font-bold">{formatAvgDuration(stats.avg_duration_seconds)}</p>
           </div>
         </div>
+        </>
+        )}
 
         {/* Stats by Exercise */}
         {showExerciseStats && (
@@ -221,6 +280,8 @@ export default function Dashboard() {
           </div>
         )}
 
+        {!showExerciseStats && (
+        <>
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Volume Over Time */}
@@ -341,6 +402,111 @@ export default function Dashboard() {
               </Link>
             ))}
           </div>
+        </div>
+        </>
+        )}
+
+        {/* Friends Section */}
+        <div className="bg-gray-800 p-6 rounded-lg mt-6">
+          <h2 className="text-xl font-bold text-white mb-4">Friends</h2>
+
+          {/* Pending requests */}
+          {pendingRequests.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-gray-400 text-sm uppercase tracking-wider mb-3">
+                Pending Requests ({pendingRequests.length})
+              </h3>
+              <div className="space-y-2">
+                {pendingRequests.map((req: any) => (
+                  <div key={req.id} className="bg-gray-700 p-4 rounded-lg flex justify-between items-center">
+                    <p className="text-white">{req.sender_email}</p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleRequest(req.id, 'accept')}
+                        className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700"
+                      >
+                        Accept
+                      </button>
+                      <button
+                        onClick={() => handleRequest(req.id, 'decline')}
+                        className="bg-gray-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-500"
+                      >
+                        Decline
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Invite a friend */}
+          <div className="mb-6">
+            <h3 className="text-gray-400 text-sm uppercase tracking-wider mb-3">Invite a Friend</h3>
+            <div className="flex gap-2">
+              <input
+                type="email"
+                value={friendEmail}
+                onChange={(e) => setFriendEmail(e.target.value)}
+                placeholder="friend@email.com"
+                className="flex-1 p-3 rounded-lg bg-gray-700 text-white"
+              />
+              <button
+                onClick={sendFriendRequest}
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700"
+              >
+                Send Request
+              </button>
+            </div>
+            {friendMessage && (
+              <p className={`mt-2 text-sm ${friendMessageIsError ? 'text-red-400' : 'text-green-400'}`}>
+                {friendMessage}
+              </p>
+            )}
+            {friendMessage && friendMessage.includes('No account') && (
+              <p className="text-gray-400 text-sm mt-1">
+                Share this link with them to sign up:{' '}
+                <span className="text-blue-400">setsandreps.vercel.app/register</span>
+              </p>
+            )}
+          </div>
+
+          {/* Friends list with stats */}
+          {friends.length === 0 ? (
+            <p className="text-gray-500 text-sm">No friends added yet. Invite someone above!</p>
+          ) : (
+            <div className="space-y-4">
+              <h3 className="text-gray-400 text-sm uppercase tracking-wider">Friends</h3>
+              {friends.map((friend: any) => (
+                <div key={friend.id} className="bg-gray-700 p-4 rounded-lg">
+                  <p className="text-white font-semibold mb-3">{friend.email}</p>
+                  <div className="grid grid-cols-2 gap-4 mb-3">
+                    <div className="bg-gray-600 p-3 rounded-lg text-center">
+                      <p className="text-white font-bold text-xl">{friend.sessions?.sessions_this_week ?? 0}</p>
+                      <p className="text-gray-400 text-xs">Sessions this week</p>
+                    </div>
+                    <div className="bg-gray-600 p-3 rounded-lg text-center">
+                      <p className="text-white font-bold text-xl">{friend.sessions?.sessions_this_month ?? 0}</p>
+                      <p className="text-gray-400 text-xs">Sessions this month</p>
+                    </div>
+                  </div>
+                  {friend.prs && friend.prs.length > 0 && (
+                    <div>
+                      <p className="text-gray-400 text-xs uppercase tracking-wider mb-2">Top PRs</p>
+                      <div className="flex flex-wrap gap-2">
+                        {friend.prs.map((pr: any) => (
+                          <span key={pr.exercise_name} className="bg-gray-600 px-3 py-1 rounded-full text-sm">
+                            <span className="text-white">{pr.exercise_name}</span>
+                            <span className="text-green-400 ml-2">{pr.max_weight} lbs</span>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

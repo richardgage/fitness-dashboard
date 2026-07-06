@@ -145,13 +145,29 @@ export async function getActiveSession(userId: number) {
 }
 
 // Get session with all exercises and sets
-export async function getSessionDetails(sessionId: number) {
+export async function getSessionDetails(sessionId: number, userId: number) {
   const session = await sql`
-    SELECT * FROM gym_sessions WHERE id = ${sessionId}
+    SELECT s.*, u.email
+    FROM gym_sessions s
+    JOIN users u ON s.user_id = u.id
+    WHERE s.id = ${sessionId}
+    AND (
+      s.user_id = ${userId}
+      OR EXISTS (
+        SELECT 1 FROM friend_requests fr
+        WHERE fr.status = 'accepted'
+        AND (
+          (fr.sender_id = ${userId} AND fr.receiver_id = s.user_id)
+          OR (fr.receiver_id = ${userId} AND fr.sender_id = s.user_id)
+        )
+      )
+    )
   `;
-  
+
+  if (!session.rows[0]) return null;
+
   const exercises = await sql`
-    SELECT e.*, 
+    SELECT e.*,
            json_agg(
              json_build_object(
                'id', s.id,
@@ -490,4 +506,42 @@ export async function getExerciseSummary(userId: number, exerciseName: string) {
       AND e.exercise_name = ${exerciseName}
   `
   return result.rows[0]
+}
+
+// Combined chronological feed: your workouts + your friends' workouts
+export async function getActivityFeed(userId: number, limit: number = 30) {
+  const result = await sql`
+    WITH my_friends AS (
+      SELECT CASE WHEN sender_id = ${userId} THEN receiver_id ELSE sender_id END as friend_id
+      FROM friend_requests
+      WHERE (sender_id = ${userId} OR receiver_id = ${userId})
+      AND status = 'accepted'
+    )
+    SELECT
+      s.id,
+      s.date,
+      s.start_time,
+      s.end_time,
+      s.user_id,
+      u.email,
+      (s.user_id = ${userId}) as is_mine,
+      EXTRACT(EPOCH FROM (s.end_time - s.start_time))::int as duration_seconds,
+      COUNT(DISTINCT e.id)::int as exercise_count,
+      COUNT(gs.id)::int as total_sets,
+      COALESCE(SUM(gs.weight * gs.reps), 0)::numeric as total_volume,
+      COALESCE(
+        json_agg(DISTINCT e.exercise_name) FILTER (WHERE e.exercise_name IS NOT NULL),
+        '[]'
+      ) as exercise_names
+    FROM gym_sessions s
+    JOIN users u ON s.user_id = u.id
+    LEFT JOIN gym_exercises e ON s.id = e.session_id
+    LEFT JOIN gym_sets gs ON e.id = gs.exercise_id
+    WHERE s.end_time IS NOT NULL
+    AND (s.user_id = ${userId} OR s.user_id IN (SELECT friend_id FROM my_friends))
+    GROUP BY s.id, s.date, s.start_time, s.end_time, s.user_id, u.email
+    ORDER BY s.start_time DESC
+    LIMIT ${limit}
+  `
+  return result.rows
 }
