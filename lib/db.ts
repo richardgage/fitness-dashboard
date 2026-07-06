@@ -228,7 +228,12 @@ export async function getGymDashboardStats(userId: number) {
       COALESCE(SUM(CASE WHEN s.date >= CURRENT_DATE - INTERVAL '7 days' THEN gs.weight * gs.reps ELSE 0 END), 0)::numeric as volume_this_week,
       COUNT(gs.id)::int as total_sets,
       COUNT(DISTINCT e.exercise_name)::int as unique_exercises,
-      COALESCE(MAX(gs.weight), 0)::numeric as heaviest_weight
+      COALESCE(MAX(gs.weight), 0)::numeric as heaviest_weight,
+      (
+        SELECT COALESCE(AVG(EXTRACT(EPOCH FROM (end_time - start_time))), 0)
+        FROM gym_sessions
+        WHERE end_time IS NOT NULL AND user_id = ${userId}
+      )::int as avg_duration_seconds
     FROM gym_sessions s
     LEFT JOIN gym_exercises e ON s.id = e.session_id
     LEFT JOIN gym_sets gs ON e.id = gs.exercise_id
@@ -447,4 +452,42 @@ export async function getFriendStats(friendId: number) {
     sessions: sessions.rows[0],
     prs: prs.rows
   }
+}
+
+// Best set per session for a given exercise — powers the progression chart
+export async function getExerciseProgression(userId: number, exerciseName: string) {
+  const result = await sql`
+    SELECT DISTINCT ON (s.id)
+      s.date,
+      s.id as session_id,
+      gs.weight::numeric as top_weight,
+      gs.reps::int as top_reps
+    FROM gym_exercises e
+    JOIN gym_sessions s ON e.session_id = s.id
+    JOIN gym_sets gs ON e.id = gs.exercise_id
+    WHERE s.user_id = ${userId}
+      AND s.end_time IS NOT NULL
+      AND e.exercise_name = ${exerciseName}
+    ORDER BY s.id, gs.weight DESC, gs.reps DESC
+  `
+  return result.rows.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+}
+
+// All-time summary for a given exercise
+export async function getExerciseSummary(userId: number, exerciseName: string) {
+  const result = await sql`
+    SELECT
+      COUNT(DISTINCT s.id)::int as total_sessions,
+      COUNT(gs.id)::int as total_sets,
+      COALESCE(SUM(gs.weight * gs.reps), 0)::numeric as total_volume,
+      COALESCE(MAX(gs.weight), 0)::numeric as pr_weight,
+      COALESCE(AVG(gs.weight), 0)::numeric as avg_weight
+    FROM gym_exercises e
+    JOIN gym_sessions s ON e.session_id = s.id
+    JOIN gym_sets gs ON e.id = gs.exercise_id
+    WHERE s.user_id = ${userId}
+      AND s.end_time IS NOT NULL
+      AND e.exercise_name = ${exerciseName}
+  `
+  return result.rows[0]
 }

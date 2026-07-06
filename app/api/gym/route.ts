@@ -12,7 +12,9 @@ import {
   getGymDashboardStats,
   getExerciseFrequency,
   getVolumeOverTime,
-  getUserIdByEmail
+  getUserIdByEmail,
+  getExerciseProgression,
+  getExerciseSummary
 } from '@/lib/db'
 import { authOptions } from '@/app/api/auth/[...nextauth]/authOptions'
 import {sql} from '@vercel/postgres'
@@ -65,6 +67,15 @@ export async function GET(request: Request) {
         volumeOverTime,
         recentSessions: recentSessions.slice(0, 5)
       })
+    }
+
+    if (action === 'exerciseStats' && exerciseName) {
+      const decodedName = decodeURIComponent(exerciseName)
+      const [progression, summary] = await Promise.all([
+        getExerciseProgression(userId, decodedName),
+        getExerciseSummary(userId, decodedName)
+      ])
+      return NextResponse.json({ progression, summary })
     }
 
     if (action === 'userExercises') {

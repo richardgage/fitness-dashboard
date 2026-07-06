@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, AreaChart, Area
+  PieChart, Pie, Cell, AreaChart, Area, LineChart, Line
 } from 'recharts'
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316']
@@ -19,12 +19,26 @@ export default function Dashboard() {
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
+  const [showExerciseStats, setShowExerciseStats] = useState(false)
+  const [selectedExercise, setSelectedExercise] = useState('')
+  const [exerciseStats, setExerciseStats] = useState<any>(null)
+  const [exerciseStatsLoading, setExerciseStatsLoading] = useState(false)
+
   useEffect(() => {
     fetch('/api/gym?action=dashboardStats')
       .then(res => res.json())
       .then(d => { setData(d); setLoading(false) })
       .catch(() => setLoading(false))
   }, [])
+
+  useEffect(() => {
+    if (!selectedExercise) return
+    setExerciseStatsLoading(true)
+    fetch(`/api/gym?action=exerciseStats&exerciseName=${encodeURIComponent(selectedExercise)}`)
+      .then(res => res.json())
+      .then(d => { setExerciseStats(d); setExerciseStatsLoading(false) })
+      .catch(() => setExerciseStatsLoading(false))
+  }, [selectedExercise])
 
   if (loading) {
     return (
@@ -96,10 +110,25 @@ export default function Dashboard() {
     return hours > 0 ? `${hours}h ${mins}m` : `${mins} min`
   }
 
+  const formatAvgDuration = (seconds: number) => {
+    const s = Math.round(seconds || 0)
+    const hours = Math.floor(s / 3600)
+    const mins = Math.round((s % 3600) / 60)
+    return hours > 0 ? `${hours}h ${mins}m` : `${mins} min`
+  }
+
   return (
     <div className="min-h-screen bg-gray-900 p-8">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-4xl font-bold text-white mb-8">Gym Dashboard</h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-4xl font-bold text-white">Gym Dashboard</h1>
+          <button
+            onClick={() => setShowExerciseStats(!showExerciseStats)}
+            className="bg-blue-600 text-white px-5 py-2.5 rounded-lg font-semibold hover:bg-blue-700"
+          >
+            {showExerciseStats ? 'Hide' : 'Stats by Exercise'}
+          </button>
+        </div>
 
         {/* Stats Cards Row 1 */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
@@ -127,7 +156,70 @@ export default function Dashboard() {
             <p className="text-purple-300 text-sm uppercase mb-2">Heaviest Lift</p>
             <p className="text-white text-3xl font-bold">{heaviestWeight} lbs</p>
           </div>
+          <div className="bg-gradient-to-br from-teal-900/50 to-gray-800 p-6 rounded-lg border border-teal-500/30">
+            <p className="text-teal-300 text-sm uppercase mb-2">Avg Session Duration</p>
+            <p className="text-white text-3xl font-bold">{formatAvgDuration(stats.avg_duration_seconds)}</p>
+          </div>
         </div>
+
+        {/* Stats by Exercise */}
+        {showExerciseStats && (
+          <div className="bg-gray-800 p-6 rounded-lg mb-6">
+            <h2 className="text-xl font-bold text-white mb-4">Stats by Exercise</h2>
+            <select
+              value={selectedExercise}
+              onChange={(e) => setSelectedExercise(e.target.value)}
+              className="bg-gray-700 text-white px-4 py-2 rounded-lg mb-6 w-full max-w-xs"
+            >
+              <option value="">Select an exercise...</option>
+              {exerciseFrequency.map((e: any) => (
+                <option key={e.name} value={e.name}>{e.name}</option>
+              ))}
+            </select>
+
+            {exerciseStatsLoading && <p className="text-gray-400">Loading...</p>}
+
+            {!exerciseStatsLoading && exerciseStats && selectedExercise && (
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                  <div className="bg-gray-700/50 p-4 rounded-lg">
+                    <p className="text-gray-400 text-xs uppercase mb-1">PR</p>
+                    <p className="text-white text-2xl font-bold">{parseFloat(exerciseStats.summary.pr_weight)} lbs</p>
+                  </div>
+                  <div className="bg-gray-700/50 p-4 rounded-lg">
+                    <p className="text-gray-400 text-xs uppercase mb-1">Sessions</p>
+                    <p className="text-white text-2xl font-bold">{exerciseStats.summary.total_sessions}</p>
+                  </div>
+                  <div className="bg-gray-700/50 p-4 rounded-lg">
+                    <p className="text-gray-400 text-xs uppercase mb-1">Total Volume</p>
+                    <p className="text-white text-2xl font-bold">{formatVolume(parseFloat(exerciseStats.summary.total_volume))}</p>
+                  </div>
+                  <div className="bg-gray-700/50 p-4 rounded-lg">
+                    <p className="text-gray-400 text-xs uppercase mb-1">Avg Weight</p>
+                    <p className="text-white text-2xl font-bold">{parseFloat(exerciseStats.summary.avg_weight).toFixed(1)} lbs</p>
+                  </div>
+                </div>
+
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={exerciseStats.progression.map((p: any) => ({
+                    date: new Date(p.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                    weight: parseFloat(p.top_weight)
+                  }))}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                    <XAxis dataKey="date" stroke="#9CA3AF" />
+                    <YAxis stroke="#9CA3AF" />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }}
+                      labelStyle={{ color: '#F3F4F6' }}
+                      formatter={(value: any) => [`${value} lbs`, 'Top Set Weight']}
+                    />
+                    <Line type="monotone" dataKey="weight" stroke="#3B82F6" strokeWidth={2} dot={{ fill: '#3B82F6' }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </>
+            )}
+          </div>
+        )}
 
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
