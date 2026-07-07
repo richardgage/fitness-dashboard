@@ -27,6 +27,7 @@ export default function NavBar() {
           <div className="hidden md:flex gap-6 items-center">
             {session ? (
               <>
+                <Link href="/home" className="text-gray-300 hover:text-white transition-colors">Home</Link>
                 <Link href="/dashboard" className="text-gray-300 hover:text-white transition-colors">Visual Stats</Link>
                 <Link href="/gym/active" className="text-gray-300 hover:text-white transition-colors">Start Workout</Link>
                 <Link href="/gym/history" className="text-gray-300 hover:text-white transition-colors">Gym History</Link>
@@ -54,6 +55,7 @@ export default function NavBar() {
             {session ? (
               <>
                 <p className="text-gray-500 text-sm px-2 pb-2">{session.user?.email}</p>
+                <Link href="/home" onClick={() => setMenuOpen(false)} className="block text-gray-300 hover:text-white py-2 px-2">Home</Link>
                 <Link href="/dashboard" onClick={() => setMenuOpen(false)} className="block text-gray-300 hover:text-white py-2 px-2">Visual Stats</Link>
                 <Link href="/gym/active" onClick={() => setMenuOpen(false)} className="block text-gray-300 hover:text-white py-2 px-2">Start Workout</Link>
                 <Link href="/gym/history" onClick={() => setMenuOpen(false)} className="block text-gray-300 hover:text-white py-2 px-2">GymHistory</Link>

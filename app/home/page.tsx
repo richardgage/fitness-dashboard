@@ -41,7 +41,7 @@ const formatTimestamp = (startTime: string) => {
   return `${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at ${time}`
 }
 
-export default function ActivityFeed() {
+export default function Home() {
   const [feed, setFeed] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 

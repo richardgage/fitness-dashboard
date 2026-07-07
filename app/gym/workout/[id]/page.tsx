@@ -1,11 +1,14 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 
 export default function WorkoutDetails() {
   const params = useParams()
   const router = useRouter()
+  const { data: session } = useSession()
+
   const [workout, setWorkout] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
@@ -17,14 +20,18 @@ export default function WorkoutDetails() {
     try {
       const response = await fetch(`/api/gym?action=details&sessionId=${params.id}`)
       const data = await response.json()
-      console.log('start_time from API:', data.start_time)  // add this
-      console.log('browser timezone:', Intl.DateTimeFormat().resolvedOptions().timeZone)
       setWorkout(data)
       setLoading(false)
     } catch (error) {
       console.error('Error fetching workout:', error)
       setLoading(false)
     }
+  }
+
+  const handleDelete = async () => {
+    if (!confirm('Delete this workout?')) return
+    await fetch(`/api/gym?sessionId=${params.id}`, { method: 'DELETE' })
+    router.push('/gym/history')
   }
 
   const formatDuration = (startTime: string, endTime: string) => {
@@ -38,7 +45,7 @@ export default function WorkoutDetails() {
 
   const getTotalVolume = (exercise: any) => {
     if (!exercise.sets) return 0
-    return exercise.sets.reduce((sum: number, set: any) => 
+    return exercise.sets.reduce((sum: number, set: any) =>
       sum + (parseFloat(set.weight) * parseInt(set.reps)), 0
     )
   }
@@ -64,29 +71,34 @@ export default function WorkoutDetails() {
     )
   }
 
+  const isOwner = workout.email === session?.user?.email
+
   return (
     <div className="min-h-screen bg-gray-900 p-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-<div className="flex justify-between items-center mb-4">
-  <Link 
-    href="/gym/history"
-    className="text-blue-400 hover:underline"
-  >
-    ← Back to History
-  </Link>
-  <button
-    onClick={async () => {
-      if (!confirm('Delete this workout?')) return
-      await fetch(`/api/gym?sessionId=${params.id}`, { method: 'DELETE' })
-      router.push('/gym/history')
-    }}
-    className="bg-red-900/20 border border-red-500/30 text-red-400 hover:text-red-300 px-4 py-2 rounded-lg text-sm"
-  >
-    Delete Workout
-  </button>
-</div>
+          <div className="flex justify-between items-center mb-4">
+            <Link
+              href="/gym/history"
+              className="text-blue-400 hover:underline"
+            >
+              ← Back to History
+            </Link>
+            {isOwner && (
+              <button
+                onClick={handleDelete}
+                className="bg-red-900/20 border border-red-500/30 text-red-400 hover:text-red-300 px-4 py-2 rounded-lg text-sm"
+              >
+                Delete Workout
+              </button>
+            )}
+          </div>
+
+          {!isOwner && (
+            <p className="text-gray-400 text-sm mb-2">{workout.email}'s workout</p>
+          )}
+
           <h1 className="text-4xl font-bold text-white mb-2">
             {new Date(workout.date).toLocaleDateString('en-US', {
               weekday: 'long',
@@ -121,7 +133,7 @@ export default function WorkoutDetails() {
               {exercise.sets && exercise.sets.length > 0 ? (
                 <div className="space-y-2">
                   {exercise.sets.map((set: any) => (
-                    <div 
+                    <div
                       key={set.id}
                       className="bg-gray-700 p-4 rounded flex justify-between items-center"
                     >
