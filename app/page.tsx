@@ -25,7 +25,7 @@ export default function Home() {
 
         {/* Title */}
         <h1 className="text-6xl text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-4 leading-tight tracking-tight">
-          Sets & Reps<br />
+          Stronger Together<br />
         </h1>
 
         {/* Subtitle */}
