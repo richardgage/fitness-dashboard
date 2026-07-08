@@ -147,7 +147,7 @@ export async function getActiveSession(userId: number) {
 // Get session with all exercises and sets
 export async function getSessionDetails(sessionId: number, userId: number) {
   const session = await sql`
-    SELECT s.*, u.email
+    SELECT s.*, u.email, u.display_name
     FROM gym_sessions s
     JOIN users u ON s.user_id = u.id
     WHERE s.id = ${sessionId}
@@ -314,11 +314,27 @@ export async function addUserIdToSessions() {
   `
 }
 
-export async function createUser(email: string, hashedPassword: string) {
+export async function createUser(email: string, hashedPassword: string, displayName: string) {
   const result = await sql`
-    INSERT INTO users (email, password)
-    VALUES (${email}, ${hashedPassword})
-    RETURNING id, email, created_at
+    INSERT INTO users (email, password, display_name)
+    VALUES (${email}, ${hashedPassword}, ${displayName})
+    RETURNING id, email, display_name, created_at
+  `
+  return result.rows[0]
+}
+
+export async function getUserById(userId: number) {
+  const result = await sql`
+    SELECT id, email, display_name FROM users WHERE id = ${userId}
+  `
+  return result.rows[0] || null
+}
+
+export async function updateDisplayName(userId: number, displayName: string) {
+  const result = await sql`
+    UPDATE users SET display_name = ${displayName}
+    WHERE id = ${userId}
+    RETURNING id, email, display_name
   `
   return result.rows[0]
 }
@@ -414,7 +430,7 @@ export async function declineFriendRequest(requestId: number, userId: number) {
 
 export async function getPendingFriendRequests(userId: number) {
   const result = await sql`
-    SELECT fr.*, u.email as sender_email
+    SELECT fr.*, u.email as sender_email, u.display_name as sender_display_name
     FROM friend_requests fr
     JOIN users u ON fr.sender_id = u.id
     WHERE fr.receiver_id = ${userId}
@@ -426,7 +442,7 @@ export async function getPendingFriendRequests(userId: number) {
 
 export async function getFriends(userId: number) {
   const result = await sql`
-    SELECT u.id, u.email
+    SELECT u.id, u.email, u.display_name
     FROM friend_requests fr
     JOIN users u ON (
       CASE 
@@ -524,6 +540,7 @@ export async function getActivityFeed(userId: number, limit: number = 30) {
       s.end_time,
       s.user_id,
       u.email,
+      u.display_name,
       (s.user_id = ${userId}) as is_mine,
       EXTRACT(EPOCH FROM (s.end_time - s.start_time))::int as duration_seconds,
       COUNT(DISTINCT e.id)::int as exercise_count,

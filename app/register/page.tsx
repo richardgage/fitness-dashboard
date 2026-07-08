@@ -5,7 +5,7 @@ import Link from 'next/link'
 
 export default function Register() {
   const router = useRouter()
-  const [formData, setFormData] = useState({ email: '', password: '' })
+  const [formData, setFormData] = useState({ name: '', email: '', password: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -48,6 +48,16 @@ export default function Register() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-gray-300 mb-2">Name</label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({...formData, name: e.target.value})}
+              className="w-full p-3 rounded bg-gray-700 text-white"
+              required
+            />
+          </div>
           <div>
             <label className="block text-gray-300 mb-2">Email</label>
             <input

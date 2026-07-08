@@ -4,10 +4,10 @@ import { createUser, getUserByEmail } from '@/lib/db'
 
 export async function POST(request: Request) {
   try {
-    const { email, password } = await request.json()
+    const { name, email, password } = await request.json()
 
-    if (!email || !password) {
-      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 })
+    if (!name || !email || !password) {
+      return NextResponse.json({ error: 'Name, email, and password are required' }, { status: 400 })
     }
 
     const existingUser = await getUserByEmail(email)
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10)
-    const user = await createUser(email, hashedPassword)
+    const user = await createUser(email, hashedPassword, name.trim())
 
     return NextResponse.json({ message: 'Account created successfully', user })
   } catch (error) {

@@ -32,6 +32,7 @@ export default function NavBar() {
                 <Link href="/gym/active" className="text-gray-300 hover:text-white transition-colors">Start Workout</Link>
                 <Link href="/gym/history" className="text-gray-300 hover:text-white transition-colors">Gym History</Link>
                 <Link href="/feedback" className="text-gray-300 hover:text-white transition-colors">Feedback</Link>
+                <Link href="/profile" className="text-gray-300 hover:text-white transition-colors">Profile</Link>
                 <span className="text-gray-500 text-sm">{session.user?.email}</span>
                 <button
                   onClick={() => signOut({ callbackUrl: '/login' })}
@@ -60,6 +61,7 @@ export default function NavBar() {
                 <Link href="/gym/active" onClick={() => setMenuOpen(false)} className="block text-gray-300 hover:text-white py-2 px-2">Start Workout</Link>
                 <Link href="/gym/history" onClick={() => setMenuOpen(false)} className="block text-gray-300 hover:text-white py-2 px-2">GymHistory</Link>
                 <Link href="/feedback" onClick={() => setMenuOpen(false)} className="block text-gray-300 hover:text-white py-2 px-2">Feedback</Link>
+                <Link href="/profile" onClick={() => setMenuOpen(false)} className="block text-gray-300 hover:text-white py-2 px-2">Profile</Link>
                 <button
                   onClick={() => signOut({ callbackUrl: '/login' })}
                   className="block text-red-400 hover:text-red-300 py-2 px-2"

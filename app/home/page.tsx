@@ -22,8 +22,16 @@ const nameFromEmail = (email: string) => {
   return namePart.charAt(0).toUpperCase() + namePart.slice(1)
 }
 
+const resolveName = (displayName: string | null | undefined, email: string) => {
+  return displayName && displayName.trim() ? displayName : nameFromEmail(email)
+}
+
 const initialFromEmail = (email: string) => {
   return (email || '?').charAt(0).toUpperCase()
+}
+
+const initialFromName = (name: string) => {
+  return (name || '?').charAt(0).toUpperCase()
 }
 
 const formatTimestamp = (startTime: string) => {
@@ -45,12 +53,68 @@ export default function Home() {
   const [feed, setFeed] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
+  const [showFriends, setShowFriends] = useState(false)
+  const [pendingRequests, setPendingRequests] = useState<any[]>([])
+  const [friends, setFriends] = useState<any[]>([])
+  const [friendEmail, setFriendEmail] = useState('')
+  const [friendMessage, setFriendMessage] = useState('')
+  const [friendMessageIsError, setFriendMessageIsError] = useState(false)
+
+  const loadFriendsData = () => {
+    fetch('/api/friends?action=pending')
+      .then(res => res.json())
+      .then(d => setPendingRequests(Array.isArray(d) ? d : []))
+      .catch(() => {})
+
+    fetch('/api/friends?action=friends')
+      .then(res => res.json())
+      .then(d => setFriends(Array.isArray(d) ? d : []))
+      .catch(() => {})
+  }
+
   useEffect(() => {
     fetch('/api/gym?action=feed')
       .then(res => res.json())
       .then(d => { setFeed(Array.isArray(d) ? d : []); setLoading(false) })
       .catch(() => setLoading(false))
+
+    loadFriendsData()
   }, [])
+
+  const sendFriendRequest = async () => {
+    setFriendMessage('')
+    try {
+      const res = await fetch('/api/friends', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'sendRequest', email: friendEmail })
+      })
+      const result = await res.json()
+      if (!res.ok) {
+        setFriendMessage(result.error || 'Something went wrong')
+        setFriendMessageIsError(true)
+      } else {
+        setFriendMessage('Friend request sent')
+        setFriendMessageIsError(false)
+        setFriendEmail('')
+        loadFriendsData()
+      }
+    } catch {
+      setFriendMessage('Something went wrong')
+      setFriendMessageIsError(true)
+    }
+  }
+
+  const handleRequest = async (requestId: number, decision: 'accept' | 'decline') => {
+    try {
+      await fetch('/api/friends', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: decision, requestId })
+      })
+      loadFriendsData()
+    } catch {}
+  }
 
   if (loading) {
     return (
@@ -64,8 +128,100 @@ export default function Home() {
     <div className="min-h-screen bg-gray-900">
       <div className="max-w-lg mx-auto">
         <div className="px-4 py-5 border-b border-gray-800">
-          <h1 className="text-2xl font-bold text-white">Feed</h1>
+          <h1 className="text-2xl font-bold text-white mb-4">Feed</h1>
+          <button
+            onClick={() => setShowFriends(!showFriends)}
+            className="bg-blue-600 text-white px-5 py-2.5 rounded-lg font-semibold hover:bg-blue-700"
+          >
+            {showFriends ? 'Hide Friends' : 'Friends'}
+          </button>
         </div>
+
+        {showFriends && (
+          <div className="px-4 py-5 border-b border-gray-800">
+            {/* Pending requests */}
+            {pendingRequests.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-gray-400 text-sm uppercase tracking-wider mb-3">
+                  Pending Requests ({pendingRequests.length})
+                </h3>
+                <div className="space-y-2">
+                  {pendingRequests.map((req: any) => (
+                    <div key={req.id} className="bg-gray-800 p-4 rounded-lg flex justify-between items-center">
+                      <p className="text-white">{resolveName(req.sender_display_name, req.sender_email)}</p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleRequest(req.id, 'accept')}
+                          className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700"
+                        >
+                          Accept
+                        </button>
+                        <button
+                          onClick={() => handleRequest(req.id, 'decline')}
+                          className="bg-gray-700 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-600"
+                        >
+                          Decline
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Invite a friend */}
+            <div className="mb-6">
+              <h3 className="text-gray-400 text-sm uppercase tracking-wider mb-3">Invite a Friend</h3>
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  value={friendEmail}
+                  onChange={(e) => setFriendEmail(e.target.value)}
+                  placeholder="friend@email.com"
+                  className="flex-1 p-3 rounded-lg bg-gray-800 text-white"
+                />
+                <button
+                  onClick={sendFriendRequest}
+                  className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700"
+                >
+                  Send
+                </button>
+              </div>
+              {friendMessage && (
+                <p className={`mt-2 text-sm ${friendMessageIsError ? 'text-red-400' : 'text-green-400'}`}>
+                  {friendMessage}
+                </p>
+              )}
+              {friendMessage && friendMessage.includes('No account') && (
+                <p className="text-gray-400 text-sm mt-1">
+                  Share this link with them to sign up:{' '}
+                  <span className="text-blue-400">setsandreps.vercel.app/register</span>
+                </p>
+              )}
+            </div>
+
+            {/* Friends list — names only */}
+            <div>
+              <h3 className="text-gray-400 text-sm uppercase tracking-wider mb-3">
+                Friends {friends.length > 0 && `(${friends.length})`}
+              </h3>
+              {friends.length === 0 ? (
+                <p className="text-gray-500 text-sm">No friends added yet. Invite someone above!</p>
+              ) : (
+                <div className="space-y-2">
+                  {friends.map((friend: any) => (
+                    <div key={friend.id} className="bg-gray-800 p-3 rounded-lg flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                        {initialFromName(resolveName(friend.display_name, friend.email))}
+                      </div>
+                      <p className="text-white">{resolveName(friend.display_name, friend.email)}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {feed.length === 0 && (
           <div className="p-8 text-center">
@@ -89,11 +245,11 @@ export default function Home() {
               {/* Header: avatar, name, timestamp */}
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-11 h-11 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
-                  {initialFromEmail(session.email)}
+                  {initialFromName(resolveName(session.display_name, session.email))}
                 </div>
                 <div className="min-w-0">
                   <p className="text-white font-semibold truncate">
-                    {session.is_mine ? 'You' : nameFromEmail(session.email)}
+                    {session.is_mine ? 'You' : resolveName(session.display_name, session.email)}
                   </p>
                   <p className="text-gray-400 text-sm">
                     {formatTimestamp(session.start_time)}
@@ -103,7 +259,7 @@ export default function Home() {
 
               {/* Title */}
               <p className="text-white text-lg font-bold mb-3">
-                {session.is_mine ? 'Your Workout' : `${nameFromEmail(session.email)}'s Workout`}
+                {session.is_mine ? 'Your Workout' : `${resolveName(session.display_name, session.email)}'s Workout`}
               </p>
 
               {/* Stats row */}

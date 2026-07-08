@@ -72,6 +72,9 @@ export default function WorkoutDetails() {
   }
 
   const isOwner = workout.email === session?.user?.email
+  const ownerName = workout.display_name && workout.display_name.trim()
+    ? workout.display_name
+    : workout.email
 
   return (
     <div className="min-h-screen bg-gray-900 p-8">
@@ -96,7 +99,7 @@ export default function WorkoutDetails() {
           </div>
 
           {!isOwner && (
-            <p className="text-gray-400 text-sm mb-2">{workout.email}'s workout</p>
+            <p className="text-gray-400 text-sm mb-2">{ownerName}'s workout</p>
           )}
 
           <h1 className="text-4xl font-bold text-white mb-2">
