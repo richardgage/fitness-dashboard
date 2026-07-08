@@ -24,12 +24,60 @@ export default function Dashboard() {
   const [exerciseStats, setExerciseStats] = useState<any>(null)
   const [exerciseStatsLoading, setExerciseStatsLoading] = useState(false)
 
+  const [topLiftsData, setTopLiftsData] = useState<any[]>([])
+  const [topLiftsNames, setTopLiftsNames] = useState<string[]>([])
+
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const d = new Date()
+    d.setDate(1)
+    d.setHours(0, 0, 0, 0)
+    return d
+  })
+
   useEffect(() => {
     fetch('/api/gym?action=dashboardStats')
       .then(res => res.json())
       .then(d => { setData(d); setLoading(false) })
       .catch(() => setLoading(false))
   }, [])
+
+  useEffect(() => {
+    if (!data || !data.exerciseFrequency || data.exerciseFrequency.length === 0) return
+
+    const topNames = data.exerciseFrequency.slice(0, 4).map((e: any) => e.name)
+    setTopLiftsNames(topNames)
+
+    Promise.all(
+      topNames.map((name: string) =>
+        fetch(`/api/gym?action=exerciseStats&exerciseName=${encodeURIComponent(name)}`)
+          .then(res => res.json())
+      )
+    ).then(results => {
+      // Merge each exercise's progression into a single date-keyed dataset
+      const merged: { [dateKey: string]: any } = {}
+
+      results.forEach((res, i) => {
+        const name = topNames[i]
+        if (!res.progression) return
+        res.progression.forEach((p: any) => {
+          const rawDate = new Date(p.date)
+          const dateKey = rawDate.toISOString().slice(0, 10)
+          if (!merged[dateKey]) {
+            merged[dateKey] = {
+              dateKey,
+              label: rawDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+            }
+          }
+          merged[dateKey][name] = parseFloat(p.top_weight)
+        })
+      })
+
+      const mergedArray = Object.values(merged).sort((a: any, b: any) =>
+        a.dateKey.localeCompare(b.dateKey)
+      )
+      setTopLiftsData(mergedArray)
+    }).catch(() => {})
+  }, [data])
 
   useEffect(() => {
     if (!selectedExercise) return
@@ -117,6 +165,60 @@ export default function Dashboard() {
     return hours > 0 ? `${hours}h ${mins}m` : `${mins} min`
   }
 
+  // Estimated 1-rep max using the Epley formula
+  const estimate1RM = (weight: number, reps: number) => {
+    if (!weight || !reps) return 0
+    if (reps === 1) return weight
+    return weight * (1 + reps / 30)
+  }
+
+  // Build a traditional month calendar grid from existing session dates
+  const getMonthCalendar = () => {
+    const activeDates = new Set(
+      volumeOverTime.map((s: any) => new Date(s.date).toDateString())
+    )
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const year = calendarMonth.getFullYear()
+    const month = calendarMonth.getMonth()
+
+    const firstOfMonth = new Date(year, month, 1)
+    const startDay = firstOfMonth.getDay() // 0 = Sunday
+    const daysInMonth = new Date(year, month + 1, 0).getDate()
+
+    const cells: { date: Date | null; active: boolean; isToday: boolean }[] = []
+
+    // Leading blanks so day 1 lands in the correct weekday column
+    for (let i = 0; i < startDay; i++) {
+      cells.push({ date: null, active: false, isToday: false })
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const cellDate = new Date(year, month, day)
+      cells.push({
+        date: cellDate,
+        active: activeDates.has(cellDate.toDateString()),
+        isToday: cellDate.toDateString() === today.toDateString()
+      })
+    }
+
+    return cells
+  }
+
+  const goToPrevMonth = () => {
+    const d = new Date(calendarMonth)
+    d.setMonth(d.getMonth() - 1)
+    setCalendarMonth(d)
+  }
+
+  const goToNextMonth = () => {
+    const d = new Date(calendarMonth)
+    d.setMonth(d.getMonth() + 1)
+    setCalendarMonth(d)
+  }
+
   return (
     <div className="min-h-screen bg-gray-900 p-8">
       <div className="max-w-7xl mx-auto">
@@ -163,6 +265,60 @@ export default function Dashboard() {
             <p className="text-white text-3xl font-bold">{formatAvgDuration(stats.avg_duration_seconds)}</p>
           </div>
         </div>
+
+        {/* Consistency Calendar */}
+        <div className="bg-gray-800 p-6 rounded-lg mb-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold text-white">Consistency</h2>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={goToPrevMonth}
+                className="text-gray-400 hover:text-white px-2 py-1"
+                aria-label="Previous month"
+              >
+                ←
+              </button>
+              <p className="text-white font-semibold w-32 text-center">
+                {calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              </p>
+              <button
+                onClick={goToNextMonth}
+                className="text-gray-400 hover:text-white px-2 py-1"
+                aria-label="Next month"
+              >
+                →
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-7 gap-2 mb-2">
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+              <p key={d} className="text-gray-500 text-xs uppercase text-center">{d}</p>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-7 gap-2">
+            {getMonthCalendar().map((cell, i) => (
+              <div
+                key={i}
+                className={`aspect-square rounded-lg flex items-center justify-center text-sm ${
+                  cell.date === null
+                    ? ''
+                    : cell.active
+                    ? 'bg-green-600 text-white font-semibold'
+                    : 'bg-gray-700/50 text-gray-400'
+                } ${cell.isToday ? 'ring-2 ring-blue-400' : ''}`}
+              >
+                {cell.date ? cell.date.getDate() : ''}
+              </div>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2 mt-4">
+            <div className="w-3 h-3 rounded-sm bg-green-600" />
+            <span className="text-gray-500 text-xs">Worked out</span>
+          </div>
+        </div>
         </>
         )}
 
@@ -207,7 +363,8 @@ export default function Dashboard() {
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={exerciseStats.progression.map((p: any) => ({
                     date: new Date(p.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-                    weight: parseFloat(p.top_weight)
+                    weight: parseFloat(p.top_weight),
+                    estimated1RM: Math.round(estimate1RM(parseFloat(p.top_weight), parseInt(p.top_reps)))
                   }))}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                     <XAxis dataKey="date" stroke="#9CA3AF" />
@@ -215,11 +372,14 @@ export default function Dashboard() {
                     <Tooltip
                       contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }}
                       labelStyle={{ color: '#F3F4F6' }}
-                      formatter={(value: any) => [`${value} lbs`, 'Top Set Weight']}
                     />
-                    <Line type="monotone" dataKey="weight" stroke="#3B82F6" strokeWidth={2} dot={{ fill: '#3B82F6' }} />
+                    <Line type="monotone" dataKey="weight" name="Top Set Weight" stroke="#3B82F6" strokeWidth={2} dot={{ fill: '#3B82F6' }} />
+                    <Line type="monotone" dataKey="estimated1RM" name="Est. 1RM" stroke="#F59E0B" strokeWidth={2} strokeDasharray="5 3" dot={{ fill: '#F59E0B' }} />
                   </LineChart>
                 </ResponsiveContainer>
+                <p className="text-gray-500 text-xs mt-2">
+                  Est. 1RM is calculated from your top set using the Epley formula — an estimate, not a tested max.
+                </p>
               </>
             )}
           </div>
@@ -314,6 +474,37 @@ export default function Dashboard() {
               </BarChart>
             </ResponsiveContainer>
           </div>
+
+          {/* PR Progression — top lifts */}
+          {topLiftsData.length > 0 && (
+            <div className="bg-gray-800 p-6 rounded-lg lg:col-span-2">
+              <h2 className="text-xl font-bold text-white mb-4">Strength Progress — Top Lifts</h2>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={topLiftsData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="label" stroke="#9CA3AF" />
+                  <YAxis stroke="#9CA3AF" />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }}
+                    labelStyle={{ color: '#F3F4F6' }}
+                    formatter={(value: any) => [`${value} lbs`, '']}
+                  />
+                  {topLiftsNames.map((name, i) => (
+                    <Line
+                      key={name}
+                      type="monotone"
+                      dataKey={name}
+                      name={name}
+                      stroke={COLORS[i % COLORS.length]}
+                      strokeWidth={2}
+                      dot={{ fill: COLORS[i % COLORS.length] }}
+                      connectNulls
+                    />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
 
         {/* Recent Workouts */}
