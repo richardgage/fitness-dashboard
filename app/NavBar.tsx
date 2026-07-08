@@ -12,7 +12,7 @@ export default function NavBar() {
       <div className="max-w-6xl mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 text-xl font-bold hover:text-blue-400">
-            Stronger Together
+            Sets & Reps
           </Link>
 
           {/* Hamburger button for mobile */}
@@ -33,7 +33,6 @@ export default function NavBar() {
                 <Link href="/gym/history" className="text-gray-300 hover:text-white transition-colors">Gym History</Link>
                 <Link href="/feedback" className="text-gray-300 hover:text-white transition-colors">Feedback</Link>
                 <Link href="/profile" className="text-gray-300 hover:text-white transition-colors">Profile</Link>
-                <span className="text-gray-500 text-sm">{session.user?.email}</span>
                 <button
                   onClick={() => signOut({ callbackUrl: '/login' })}
                   className="text-gray-300 hover:text-red-400 transition-colors"
@@ -55,7 +54,6 @@ export default function NavBar() {
           <div className="md:hidden pb-4 space-y-2">
             {session ? (
               <>
-                <p className="text-gray-500 text-sm px-2 pb-2">{session.user?.email}</p>
                 <Link href="/home" onClick={() => setMenuOpen(false)} className="block text-gray-300 hover:text-white py-2 px-2">Home</Link>
                 <Link href="/dashboard" onClick={() => setMenuOpen(false)} className="block text-gray-300 hover:text-white py-2 px-2">Visual Stats</Link>
                 <Link href="/gym/active" onClick={() => setMenuOpen(false)} className="block text-gray-300 hover:text-white py-2 px-2">Start Workout</Link>
