@@ -30,7 +30,7 @@ export default function Home() {
 
         {/* Subtitle */}
         <p className="text-gray-400 text-lg mb-4 leading-relaxed">
-          Track your lifts. Beat your records. <br className="hidden sm:block" />
+          Track your lifts. Add your friends. Beat your records. <br className="hidden sm:block" />
           Built for serious training.
         </p>
 
@@ -56,7 +56,7 @@ export default function Home() {
           </Link>
           <Link
             href="/login"
-            className="bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white px-8 py-4 rounded-xl text-lg font-semibold transition-colors"
+            className="bg-green-600 hover:bg-green-500 text-white px-8 py-4 rounded-xl text-lg font-bold transition-colors"
           >
             Log In
           </Link>
