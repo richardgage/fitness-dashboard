@@ -556,7 +556,7 @@ export async function getActivityFeed(userId: number, limit: number = 30) {
     LEFT JOIN gym_sets gs ON e.id = gs.exercise_id
     WHERE s.end_time IS NOT NULL
     AND (s.user_id = ${userId} OR s.user_id IN (SELECT friend_id FROM my_friends))
-    GROUP BY s.id, s.date, s.start_time, s.end_time, s.user_id, u.email
+    GROUP BY s.id, s.date, s.start_time, s.end_time, s.user_id, u.email, u.display_name
     ORDER BY s.start_time DESC
     LIMIT ${limit}
   `
