@@ -258,11 +258,11 @@ export default function Home() {
               {/* Stats row */}
               <div className="grid grid-cols-2 gap-3 mb-3">
                 <div>
-                  <p className="text-gray-500 text-xs uppercase mb-0.5">Duration</p>
+                  <p className="text-white text-xs uppercase mb-0.5">Duration</p>
                   <p className="text-white font-bold text-base">{formatDuration(session.duration_seconds)}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500 text-xs uppercase mb-0.5">Exercises</p>
+                  <p className="text-white text-xs uppercase mb-0.5">Exercises</p>
                   <p className="text-white font-bold text-base">{session.exercise_count}</p>
                 </div>
               </div>
@@ -272,7 +272,7 @@ export default function Home() {
                 <div className="flex flex-wrap gap-2">
                   {session.exercises.map((ex: any, i: number) => (
                     <div key={i} className="bg-blue-950 border border-blue-800 rounded-lg px-4 py-3 min-w-[140px]">
-                      <p className="text-gray-400 text-xs uppercase mb-2 truncate">{ex.name}</p>
+                      <p className="text-white font-bold text-xs uppercase mb-2 truncate">{ex.name}</p>
                       <div className="space-y-1">
                         {ex.sets?.map((set: any, si: number) => (
                           <p key={si} className="text-sm">
