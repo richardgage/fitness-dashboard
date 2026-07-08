@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, AreaChart, Area, LineChart, Line
+  PieChart, Pie, Cell, LineChart, Line
 } from 'recharts'
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316']
@@ -117,29 +117,7 @@ export default function Dashboard() {
 
   const { stats, exerciseFrequency, volumeOverTime, recentSessions } = data
 
-  const totalVolume = parseFloat(stats.total_volume) || 0
-  const volumeThisWeek = parseFloat(stats.volume_this_week) || 0
   const heaviestWeight = parseFloat(stats.heaviest_weight) || 0
-
-  // Monthly volume for bar chart
-  const getMonthlyVolume = () => {
-    const byMonth: { [key: string]: number } = {}
-    volumeOverTime.forEach((s: any) => {
-      const month = new Date(s.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-      byMonth[month] = (byMonth[month] || 0) + (parseFloat(s.session_volume) || 0)
-    })
-    return Object.entries(byMonth)
-      .map(([month, volume]) => ({ month, volume: Math.round(volume) }))
-      .slice(-6)
-  }
-
-  // Volume over time for area chart (last 20 sessions)
-  const getVolumeChartData = () => {
-    return volumeOverTime.slice(-20).map((s: any) => ({
-      date: new Date(s.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      volume: parseFloat(s.session_volume) || 0
-    }))
-  }
 
   // Exercise frequency for pie chart
   const getPieData = () => {
@@ -234,8 +212,8 @@ export default function Dashboard() {
 
         {!showExerciseStats && (
         <>
-        {/* Stats Cards Row 1 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-gray-800 p-6 rounded-lg">
             <p className="text-gray-400 text-sm uppercase mb-2">Total Workouts This Week</p>
             <p className="text-white text-3xl font-bold">{stats.sessions_this_week}</p>
@@ -244,25 +222,16 @@ export default function Dashboard() {
             <p className="text-gray-400 text-sm uppercase mb-2">Total Workouts This Month</p>
             <p className="text-white text-3xl font-bold">{stats.sessions_this_month}</p>
           </div>
-          <div className="bg-gray-800 p-6 rounded-lg">
-            <p className="text-gray-400 text-sm uppercase mb-2">Total Volume</p>
-            <p className="text-white text-3xl font-bold">{formatVolume(totalVolume)}</p>
-          </div>
-        </div>
-
-        {/* Stats Cards Row 2 - Highlights */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-gradient-to-br from-blue-900/50 to-gray-800 p-6 rounded-lg border border-blue-500/30">
-            <p className="text-blue-300 text-sm uppercase mb-2">Volume This Week</p>
-            <p className="text-white text-3xl font-bold">{formatVolume(volumeThisWeek)}</p>
+          <div className="bg-gradient-to-br from-teal-900/50 to-gray-800 p-6 rounded-lg border border-teal-500/30">
+            <p className="text-teal-300 text-sm uppercase mb-2">Avg Session Duration</p>
+            <p className="text-white text-3xl font-bold">{formatAvgDuration(stats.avg_duration_seconds)}</p>
           </div>
           <div className="bg-gradient-to-br from-purple-900/50 to-gray-800 p-6 rounded-lg border border-purple-500/30">
             <p className="text-purple-300 text-sm uppercase mb-2">Heaviest Lift</p>
             <p className="text-white text-3xl font-bold">{heaviestWeight} lbs</p>
-          </div>
-          <div className="bg-gradient-to-br from-teal-900/50 to-gray-800 p-6 rounded-lg border border-teal-500/30">
-            <p className="text-teal-300 text-sm uppercase mb-2">Avg Session Duration</p>
-            <p className="text-white text-3xl font-bold">{formatAvgDuration(stats.avg_duration_seconds)}</p>
+            {stats.heaviest_weight_exercise && (
+              <p className="text-purple-300/70 text-sm mt-1">{stats.heaviest_weight_exercise}</p>
+            )}
           </div>
         </div>
 
@@ -270,20 +239,20 @@ export default function Dashboard() {
         <div className="bg-gray-800 p-6 rounded-lg mb-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold text-white">Consistency</h2>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <button
                 onClick={goToPrevMonth}
-                className="text-gray-400 hover:text-white px-2 py-1"
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-700 hover:bg-gray-600 text-white text-lg transition-colors"
                 aria-label="Previous month"
               >
                 ←
               </button>
-              <p className="text-white font-semibold w-32 text-center">
+              <p className="text-white font-semibold text-center min-w-[130px]">
                 {calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
               </p>
               <button
                 onClick={goToNextMonth}
-                className="text-gray-400 hover:text-white px-2 py-1"
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-700 hover:bg-gray-600 text-white text-lg transition-colors"
                 aria-label="Next month"
               >
                 →
@@ -389,24 +358,6 @@ export default function Dashboard() {
         <>
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Volume Over Time */}
-          <div className="bg-gray-800 p-6 rounded-lg">
-            <h2 className="text-xl font-bold text-white mb-4">Volume Per Session</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={getVolumeChartData()}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="date" stroke="#9CA3AF" />
-                <YAxis stroke="#9CA3AF" tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }}
-                  labelStyle={{ color: '#F3F4F6' }}
-                  formatter={(value: any) => [formatVolume(value), 'Volume']}
-                />
-                <Area type="monotone" dataKey="volume" stroke="#3B82F6" fill="#3B82F6" fillOpacity={0.3} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-
           {/* Exercise Frequency Pie */}
           <div className="bg-gray-800 p-6 rounded-lg">
             <h2 className="text-xl font-bold text-white mb-4">Exercise Frequency</h2>
@@ -430,24 +381,6 @@ export default function Dashboard() {
                   contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }}
                 />
               </PieChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Monthly Volume */}
-          <div className="bg-gray-800 p-6 rounded-lg">
-            <h2 className="text-xl font-bold text-white mb-4">Monthly Volume</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={getMonthlyVolume()}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="month" stroke="#9CA3AF" />
-                <YAxis stroke="#9CA3AF" tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }}
-                  labelStyle={{ color: '#F3F4F6' }}
-                  formatter={(value: any) => [formatVolume(value), 'Volume']}
-                />
-                <Bar dataKey="volume" fill="#F59E0B" />
-              </BarChart>
             </ResponsiveContainer>
           </div>
 

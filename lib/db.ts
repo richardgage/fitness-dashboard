@@ -249,7 +249,16 @@ export async function getGymDashboardStats(userId: number) {
         SELECT COALESCE(AVG(EXTRACT(EPOCH FROM (end_time - start_time))), 0)
         FROM gym_sessions
         WHERE end_time IS NOT NULL AND user_id = ${userId}
-      )::int as avg_duration_seconds
+      )::int as avg_duration_seconds,
+      (
+        SELECT e2.exercise_name
+        FROM gym_sets gs2
+        JOIN gym_exercises e2 ON gs2.exercise_id = e2.id
+        JOIN gym_sessions s2 ON e2.session_id = s2.id
+        WHERE s2.user_id = ${userId} AND s2.end_time IS NOT NULL
+        ORDER BY gs2.weight DESC
+        LIMIT 1
+      ) as heaviest_weight_exercise
     FROM gym_sessions s
     LEFT JOIN gym_exercises e ON s.id = e.session_id
     LEFT JOIN gym_sets gs ON e.id = gs.exercise_id
@@ -532,6 +541,30 @@ export async function getActivityFeed(userId: number, limit: number = 30) {
       FROM friend_requests
       WHERE (sender_id = ${userId} OR receiver_id = ${userId})
       AND status = 'accepted'
+    ),
+    session_exercise_sets AS (
+      SELECT
+        e.id as exercise_id,
+        e.session_id,
+        e.exercise_name,
+        e.exercise_order,
+        jsonb_agg(
+          jsonb_build_object('weight', gs.weight, 'reps', gs.reps, 'set_number', gs.set_number)
+          ORDER BY gs.set_number
+        ) as sets
+      FROM gym_exercises e
+      JOIN gym_sets gs ON gs.exercise_id = e.id
+      GROUP BY e.id, e.session_id, e.exercise_name, e.exercise_order
+    ),
+    session_exercises_agg AS (
+      SELECT
+        session_id,
+        jsonb_agg(
+          jsonb_build_object('name', exercise_name, 'sets', sets)
+          ORDER BY exercise_order
+        ) as exercises
+      FROM session_exercise_sets
+      GROUP BY session_id
     )
     SELECT
       s.id,
@@ -546,17 +579,15 @@ export async function getActivityFeed(userId: number, limit: number = 30) {
       COUNT(DISTINCT e.id)::int as exercise_count,
       COUNT(gs.id)::int as total_sets,
       COALESCE(SUM(gs.weight * gs.reps), 0)::numeric as total_volume,
-      COALESCE(
-        json_agg(DISTINCT e.exercise_name) FILTER (WHERE e.exercise_name IS NOT NULL),
-        '[]'
-      ) as exercise_names
+      COALESCE(sea.exercises, '[]'::jsonb) as exercises
     FROM gym_sessions s
     JOIN users u ON s.user_id = u.id
     LEFT JOIN gym_exercises e ON s.id = e.session_id
     LEFT JOIN gym_sets gs ON e.id = gs.exercise_id
+    LEFT JOIN session_exercises_agg sea ON sea.session_id = s.id
     WHERE s.end_time IS NOT NULL
     AND (s.user_id = ${userId} OR s.user_id IN (SELECT friend_id FROM my_friends))
-    GROUP BY s.id, s.date, s.start_time, s.end_time, s.user_id, u.email, u.display_name
+    GROUP BY s.id, s.date, s.start_time, s.end_time, s.user_id, u.email, u.display_name, sea.exercises
     ORDER BY s.start_time DESC
     LIMIT ${limit}
   `

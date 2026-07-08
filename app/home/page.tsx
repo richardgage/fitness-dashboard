@@ -2,13 +2,6 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 
-const formatVolume = (lbs: number) => {
-  const val = parseFloat(String(lbs)) || 0
-  if (val >= 1000000) return `${(val / 1000000).toFixed(1)}M lbs`
-  if (val >= 1000) return `${(val / 1000).toFixed(1)}K lbs`
-  return `${val.toLocaleString()} lbs`
-}
-
 const formatDuration = (seconds: number) => {
   const s = Math.round(seconds || 0)
   const hours = Math.floor(s / 3600)
@@ -263,14 +256,10 @@ export default function Home() {
               </p>
 
               {/* Stats row */}
-              <div className="grid grid-cols-3 gap-3 mb-3">
+              <div className="grid grid-cols-2 gap-3 mb-3">
                 <div>
                   <p className="text-gray-500 text-xs uppercase mb-0.5">Duration</p>
                   <p className="text-white font-bold text-base">{formatDuration(session.duration_seconds)}</p>
-                </div>
-                <div>
-                  <p className="text-gray-500 text-xs uppercase mb-0.5">Volume</p>
-                  <p className="text-white font-bold text-base">{formatVolume(parseFloat(session.total_volume))}</p>
                 </div>
                 <div>
                   <p className="text-gray-500 text-xs uppercase mb-0.5">Exercises</p>
@@ -278,11 +267,23 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Exercise list */}
-              {session.exercise_names?.length > 0 && (
-                <p className="text-gray-400 text-sm truncate">
-                  {session.exercise_names.join(', ')}
-                </p>
+              {/* Exercises with all sets */}
+              {session.exercises && session.exercises.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {session.exercises.map((ex: any, i: number) => (
+                    <div key={i} className="bg-blue-950 border border-blue-800 rounded-lg px-4 py-3 min-w-[140px]">
+                      <p className="text-gray-400 text-xs uppercase mb-2 truncate">{ex.name}</p>
+                      <div className="space-y-1">
+                        {ex.sets?.map((set: any, si: number) => (
+                          <p key={si} className="text-sm">
+                            <span className="text-white font-bold">{set.weight} lbs</span>
+                            <span className="text-gray-400"> × {set.reps}</span>
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </Link>
           ))}
