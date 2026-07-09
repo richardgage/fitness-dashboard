@@ -24,3 +24,10 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Keep page content clear of the fixed mobile bottom nav bar */
+@media (max-width: 767px) {
+  body {
+    padding-bottom: 5rem;
+  }
+}
