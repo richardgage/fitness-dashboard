@@ -66,15 +66,13 @@ export default function Profile() {
           </div>
 
           <div className="mb-6">
-            <label className="block text-gray-400 text-sm mb-2">
-              {user?.display_name ? user.display_name : 'Name'}
-            </label>
+            <label className="block text-gray-400 text-sm uppercase mb-2">Name</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full p-3 rounded-lg bg-gray-700 text-white"
-              placeholder="Change Your Name Here"
+              placeholder="Your name"
             />
           </div>
 

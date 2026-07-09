@@ -534,7 +534,7 @@ export async function getExerciseSummary(userId: number, exerciseName: string) {
 }
 
 // Combined chronological feed: your workouts + your friends' workouts
-export async function getActivityFeed(userId: number, limit: number = 30) {
+export async function getActivityFeed(userId: number, limit: number = 30, before: string | null = null) {
   const result = await sql`
     WITH my_friends AS (
       SELECT CASE WHEN sender_id = ${userId} THEN receiver_id ELSE sender_id END as friend_id
@@ -587,6 +587,7 @@ export async function getActivityFeed(userId: number, limit: number = 30) {
     LEFT JOIN session_exercises_agg sea ON sea.session_id = s.id
     WHERE s.end_time IS NOT NULL
     AND (s.user_id = ${userId} OR s.user_id IN (SELECT friend_id FROM my_friends))
+    AND (${before}::timestamptz IS NULL OR s.start_time < ${before}::timestamptz)
     GROUP BY s.id, s.date, s.start_time, s.end_time, s.user_id, u.email, u.display_name, sea.exercises
     ORDER BY s.start_time DESC
     LIMIT ${limit}

@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 
 const formatDuration = (seconds: number) => {
@@ -45,6 +45,11 @@ const formatTimestamp = (startTime: string) => {
 export default function Home() {
   const [feed, setFeed] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(true)
+  const loadMoreRef = useRef<HTMLDivElement | null>(null)
+
+  const PAGE_SIZE = 20
 
   const [showFriends, setShowFriends] = useState(false)
   const [pendingRequests, setPendingRequests] = useState<any[]>([])
@@ -65,14 +70,55 @@ export default function Home() {
       .catch(() => {})
   }
 
+  const fetchFeedPage = async (before?: string) => {
+    const url = before
+      ? `/api/gym?action=feed&limit=${PAGE_SIZE}&before=${encodeURIComponent(before)}`
+      : `/api/gym?action=feed&limit=${PAGE_SIZE}`
+    const res = await fetch(url)
+    const data = await res.json()
+    return Array.isArray(data) ? data : []
+  }
+
   useEffect(() => {
-    fetch('/api/gym?action=feed')
-      .then(res => res.json())
-      .then(d => { setFeed(Array.isArray(d) ? d : []); setLoading(false) })
+    fetchFeedPage()
+      .then(data => {
+        setFeed(data)
+        setHasMore(data.length === PAGE_SIZE)
+        setLoading(false)
+      })
       .catch(() => setLoading(false))
 
     loadFriendsData()
   }, [])
+
+  const loadMore = async () => {
+    if (loadingMore || !hasMore || feed.length === 0) return
+    setLoadingMore(true)
+    try {
+      const lastItem = feed[feed.length - 1]
+      const nextBatch = await fetchFeedPage(lastItem.start_time)
+      setFeed(prev => [...prev, ...nextBatch])
+      setHasMore(nextBatch.length === PAGE_SIZE)
+    } catch {
+      // leave hasMore as-is so the user can try scrolling again
+    } finally {
+      setLoadingMore(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!loadMoreRef.current) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMore()
+        }
+      },
+      { rootMargin: '300px' }
+    )
+    observer.observe(loadMoreRef.current)
+    return () => observer.disconnect()
+  }, [feed, hasMore, loadingMore])
 
   const sendFriendRequest = async () => {
     setFriendMessage('')
@@ -121,7 +167,7 @@ export default function Home() {
     <div className="min-h-screen bg-gray-900">
       <div className="max-w-lg mx-auto">
         <div className="px-4 py-5 border-b border-gray-800">
-          <h1 className="text-2xl font-bold text-white mb-4">Activities</h1>
+          <h1 className="text-2xl font-bold text-white mb-4">Feed</h1>
           <button
             onClick={() => setShowFriends(!showFriends)}
             className="bg-blue-600 text-white px-5 py-2.5 rounded-lg font-semibold hover:bg-blue-700"
@@ -164,7 +210,7 @@ export default function Home() {
 
             {/* Invite a friend */}
             <div className="mb-6">
-              <h3 className="text-white font-bold text-sm uppercase tracking-wider mb-3">Add a Friend</h3>
+              <h3 className="text-gray-400 text-sm uppercase tracking-wider mb-3">Invite a Friend</h3>
               <div className="flex gap-2">
                 <input
                   type="email"
@@ -258,11 +304,11 @@ export default function Home() {
               {/* Stats row */}
               <div className="grid grid-cols-2 gap-3 mb-3">
                 <div>
-                  <p className="text-white text-xs uppercase mb-0.5">Duration</p>
+                  <p className="text-gray-500 text-xs uppercase mb-0.5">Duration</p>
                   <p className="text-white font-bold text-base">{formatDuration(session.duration_seconds)}</p>
                 </div>
                 <div>
-                  <p className="text-white text-xs uppercase mb-0.5">Exercises</p>
+                  <p className="text-gray-500 text-xs uppercase mb-0.5">Exercises</p>
                   <p className="text-white font-bold text-base">{session.exercise_count}</p>
                 </div>
               </div>
@@ -272,7 +318,7 @@ export default function Home() {
                 <div className="flex flex-wrap gap-2">
                   {session.exercises.map((ex: any, i: number) => (
                     <div key={i} className="bg-blue-950 border border-blue-800 rounded-lg px-4 py-3 min-w-[140px]">
-                      <p className="text-white font-bold text-xs uppercase mb-2 truncate">{ex.name}</p>
+                      <p className="text-white text-xs uppercase mb-2 truncate">{ex.name}</p>
                       <div className="space-y-1">
                         {ex.sets?.map((set: any, si: number) => (
                           <p key={si} className="text-sm">
@@ -288,6 +334,16 @@ export default function Home() {
             </Link>
           ))}
         </div>
+
+        {/* Infinite scroll trigger */}
+        {hasMore && feed.length > 0 && (
+          <div ref={loadMoreRef} className="py-6 text-center">
+            {loadingMore && <p className="text-gray-500 text-sm">Loading more...</p>}
+          </div>
+        )}
+        {!hasMore && feed.length > 0 && (
+          <p className="text-gray-600 text-sm text-center py-6">You're all caught up</p>
+        )}
       </div>
     </div>
   )
