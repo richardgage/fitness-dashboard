@@ -29,7 +29,7 @@ export default function NavBar() {
               <>
                 <Link href="/activities" className="text-gray-300 hover:text-white transition-colors">Activities</Link>
                 <Link href="/dashboard" className="text-gray-300 hover:text-white transition-colors">Visual Stats</Link>
-                <Link href="/gym/active" className="text-gray-300 hover:text-white transition-colors">Start Workout</Link>
+                <Link href="/gym/active" className="text-gray-300 hover:text-white transition-colors">Record Workout</Link>
                 <Link href="/gym/history" className="text-gray-300 hover:text-white transition-colors">Gym History</Link>
                 <Link href="/feedback" className="text-gray-300 hover:text-white transition-colors">Feedback</Link>
                 <Link href="/profile" className="text-gray-300 hover:text-white transition-colors">Profile</Link>
@@ -56,7 +56,7 @@ export default function NavBar() {
               <>
                 <Link href="/activities" onClick={() => setMenuOpen(false)} className="block text-gray-300 hover:text-white py-2 px-2">Activities</Link>
                 <Link href="/dashboard" onClick={() => setMenuOpen(false)} className="block text-gray-300 hover:text-white py-2 px-2">Visual Stats</Link>
-                <Link href="/gym/active" onClick={() => setMenuOpen(false)} className="block text-gray-300 hover:text-white py-2 px-2">Start Workout</Link>
+                <Link href="/gym/active" onClick={() => setMenuOpen(false)} className="block text-gray-300 hover:text-white py-2 px-2">Record Workout</Link>
                 <Link href="/gym/history" onClick={() => setMenuOpen(false)} className="block text-gray-300 hover:text-white py-2 px-2">GymHistory</Link>
                 <Link href="/feedback" onClick={() => setMenuOpen(false)} className="block text-gray-300 hover:text-white py-2 px-2">Feedback</Link>
                 <Link href="/profile" onClick={() => setMenuOpen(false)} className="block text-gray-300 hover:text-white py-2 px-2">Profile</Link>

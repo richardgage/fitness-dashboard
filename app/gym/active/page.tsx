@@ -2,32 +2,113 @@
 import { useState, useEffect } from 'react'
 
 const COMMON_EXERCISES = [
+  // Chest
   'Bench Press',
-  'Deadlift',
-  'Overhead Press',
-  'Barbell Row',
-  'Pull-ups',
-  'Dips',
-  'Leg Press',
-  'Lat Pulldown',
-  'Bicep Curl',
-  'Tricep Extension',
-  'Shoulder Press',
-  'Leg Curl',
-  'Leg Extension',
-  'Calf Raise',
-  'Bulgarian Split Squat',
-  'Chest Fly',
-  'Cable Row',
-  'Hammer Curl',
-  'Military Press',
-  'Front Squat',
-  'Back Squat',
-  'Romanian Deadlift',
-  'Hip Thrust',
   'Incline Bench Press',
   'Decline Bench Press',
+  'Dumbbell Bench Press',
+  'Incline Dumbbell Press',
+  'Decline Dumbbell Press',
+  'Chest Fly',
+  'Cable Fly',
+  'Pec Deck',
+  'Push-ups',
+  'Dips',
+
+  // Back
+  'Deadlift',
+  'Romanian Deadlift',
+  'Sumo Deadlift',
+  'Rack Pulls',
+  'Barbell Row',
+  'Dumbbell Row',
+  'T-Bar Row',
+  'Cable Row',
   'Seated Row',
+  'Pull-ups',
+  'Chin-ups',
+  'Lat Pulldown',
+  'Wide-Grip Lat Pulldown',
+  'Straight-Arm Pulldown',
+  'Face Pull',
+  'Shrugs',
+  'Good Mornings',
+
+  // Shoulders
+  'Overhead Press',
+  'Military Press',
+  'Shoulder Press',
+  'Dumbbell Shoulder Press',
+  'Arnold Press',
+  'Lateral Raise',
+  'Cable Lateral Raise',
+  'Front Raise',
+  'Rear Delt Fly',
+  'Upright Row',
+
+  // Biceps
+  'Bicep Curl',
+  'Barbell Curl',
+  'Dumbbell Curl',
+  'Hammer Curl',
+  'Preacher Curl',
+  'Concentration Curl',
+  'Cable Curl',
+  'EZ Bar Curl',
+  'Incline Dumbbell Curl',
+
+  // Triceps
+  'Tricep Extension',
+  'Tricep Pushdown',
+  'Overhead Tricep Extension',
+  'Skull Crushers',
+  'Close-Grip Bench Press',
+  'Tricep Kickback',
+
+  // Legs — Quads
+  'Squat',
+  'Back Squat',
+  'Front Squat',
+  'Goblet Squat',
+  'Leg Press',
+  'Leg Extension',
+  'Bulgarian Split Squat',
+  'Walking Lunges',
+  'Lunges',
+  'Hack Squat',
+  'Step-Ups',
+
+  // Legs — Hamstrings & Glutes
+  'Leg Curl',
+  'Hip Thrust',
+  'Glute Bridge',
+  'Cable Kickback',
+
+  // Legs — Calves
+  'Calf Raise',
+  'Seated Calf Raise',
+  'Standing Calf Raise',
+
+  // Core
+  'Plank',
+  'Side Plank',
+  'Crunches',
+  'Sit-ups',
+  'Russian Twists',
+  'Hanging Leg Raise',
+  'Hanging Knee Raise',
+  'Cable Crunch',
+  'Ab Wheel Rollout',
+  'Mountain Climbers',
+
+  // Functional / Olympic
+  'Kettlebell Swing',
+  "Farmer's Carry",
+  'Box Jump',
+  'Battle Ropes',
+  'Clean and Jerk',
+  'Snatch',
+  'Power Clean',
 ].sort()
 
 export default function GymWorkout() {
@@ -42,6 +123,10 @@ export default function GymWorkout() {
   const [customExercises, setCustomExercises] = useState<string[]>([])
   const [showAddExercise, setShowAddExercise] = useState(false)
   const [newExerciseName, setNewExerciseName] = useState('')
+
+  // Exercise search/autocomplete state
+  const [exerciseSearchQuery, setExerciseSearchQuery] = useState('')
+  const [showSuggestions, setShowSuggestions] = useState(false)
 
   // Rest timer state
   const [restTimeSeconds, setRestTimeSeconds] = useState(90)
@@ -178,6 +263,12 @@ export default function GymWorkout() {
     fetchLastWorkout(exerciseName)
   }
 
+  const handleSelectFromSuggestions = (exerciseName: string) => {
+    setExerciseSearchQuery('')
+    setShowSuggestions(false)
+    selectExercise(exerciseName)
+  }
+
   const fetchLastWorkout = async (exerciseName: string) => {
     try {
       const response = await fetch(`/api/gym?action=lastWorkout&exerciseName=${encodeURIComponent(exerciseName)}`)
@@ -252,6 +343,7 @@ const handleAddExercise = async () => {
   const switchExercise = () => {
     setCurrentExercise(null)
     setSelectedExerciseName('')
+    setExerciseSearchQuery('')
     setWeight('')
     setReps('')
     setLastWorkout(null)
@@ -282,6 +374,14 @@ const endWorkout = async () => {
     const secs = seconds % 60
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
+
+  const allExercises = [...COMMON_EXERCISES, ...customExercises]
+    .filter((v, i, a) => a.indexOf(v) === i)
+    .sort()
+
+  const filteredExercises = exerciseSearchQuery
+    ? allExercises.filter(e => e.toLowerCase().includes(exerciseSearchQuery.toLowerCase()))
+    : allExercises
 
   if (loading) {
     return (
@@ -418,20 +518,42 @@ const endWorkout = async () => {
                 <label className="block text-white text-lg font-semibold mb-3">
                   Select Exercise:
                 </label>
-                <div className="flex gap-2 items-center">
-                  <select
-                    value={selectedExerciseName}
-                    onChange={(e) => selectExercise(e.target.value)}
-                    className="flex-1 p-3 rounded bg-gray-700 text-white text-lg"
-                  >
-                    <option value="">-- Choose Exercise --</option>
-                    {[...COMMON_EXERCISES, ...customExercises]
-                      .filter((v, i, a) => a.indexOf(v) === i)
-                      .sort()
-                      .map(exercise => (
-                        <option key={exercise} value={exercise}>{exercise}</option>
-                      ))}
-                  </select>
+                <div className="flex gap-2 items-start">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      value={exerciseSearchQuery}
+                      onChange={(e) => {
+                        setExerciseSearchQuery(e.target.value)
+                        setShowSuggestions(true)
+                      }}
+                      onFocus={() => setShowSuggestions(true)}
+                      onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                      placeholder="Type to search exercises..."
+                      className="w-full p-3 rounded bg-gray-700 text-white text-lg"
+                    />
+                    {showSuggestions && (
+                      <div className="absolute z-10 mt-1 w-full bg-gray-700 border border-gray-600 rounded-lg max-h-64 overflow-y-auto shadow-xl">
+                        {filteredExercises.length > 0 ? (
+                          filteredExercises.map(exercise => (
+                            <button
+                              key={exercise}
+                              type="button"
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => handleSelectFromSuggestions(exercise)}
+                              className="w-full text-left px-4 py-3 text-white hover:bg-gray-600 transition-colors"
+                            >
+                              {exercise}
+                            </button>
+                          ))
+                        ) : (
+                          <p className="px-4 py-3 text-gray-400 text-sm">
+                            No matches — use the + button to add "{exerciseSearchQuery}" as a new exercise
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
                   <button
                     onClick={() => setShowAddExercise(!showAddExercise)}
                     className="bg-gray-700 text-white px-4 py-3 rounded hover:bg-gray-600 text-xl"

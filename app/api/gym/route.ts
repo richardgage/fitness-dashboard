@@ -83,7 +83,9 @@ export async function GET(request: Request) {
     }
 
     if (action === 'feed') {
-      const data = await getActivityFeed(userId)
+      const limitParam = searchParams.get('limit')
+      const limit = limitParam ? parseInt(limitParam) : 30
+      const data = await getActivityFeed(userId, limit)
       return NextResponse.json(data)
     }
 

@@ -118,46 +118,26 @@ export default function WorkoutDetails() {
         </div>
 
         {/* Exercises */}
-        <div className="space-y-6">
+        <div className="flex flex-wrap gap-3">
           {workout.exercises && workout.exercises.map((exercise: any) => (
-            <div key={exercise.id} className="bg-gray-800 p-6 rounded-lg">
-              <div className="flex justify-between items-start mb-4">
-                <h2 className="text-2xl font-bold text-white">{exercise.exercise_name}</h2>
-                <div className="text-right">
-                  <p className="text-blue-400 font-semibold">
-                    {exercise.sets ? exercise.sets.length : 0} sets
-                  </p>
-                  <p className="text-gray-400 text-sm">
-                    {getTotalVolume(exercise).toLocaleString()} lbs total
-                  </p>
-                </div>
+            <div key={exercise.id} className="bg-blue-950 border border-blue-800 rounded-lg px-4 py-3 min-w-[140px]">
+              <div className="flex justify-between items-baseline gap-3 mb-2">
+                <p className="text-white text-xs uppercase truncate">{exercise.exercise_name}</p>
+                <p className="text-gray-500 text-xs whitespace-nowrap">
+                  {getTotalVolume(exercise).toLocaleString()} lbs
+                </p>
               </div>
-
               {exercise.sets && exercise.sets.length > 0 ? (
-                <div className="space-y-2">
+                <div className="space-y-1">
                   {exercise.sets.map((set: any) => (
-                    <div
-                      key={set.id}
-                      className="bg-gray-700 p-4 rounded flex justify-between items-center"
-                    >
-                      <span className="text-gray-300">Set {set.set_number}</span>
-                      <div className="flex items-center gap-4">
-                        <span className="text-white font-semibold text-lg">
-                          {set.weight} lbs
-                        </span>
-                        <span className="text-gray-400">×</span>
-                        <span className="text-white font-semibold text-lg">
-                          {set.reps} reps
-                        </span>
-                        <span className="text-gray-500 text-sm ml-4">
-                          ({(parseFloat(set.weight) * parseInt(set.reps)).toLocaleString()} lbs)
-                        </span>
-                      </div>
-                    </div>
+                    <p key={set.id} className="text-sm">
+                      <span className="text-white font-bold">{set.weight} lbs</span>
+                      <span className="text-gray-400"> × {set.reps}</span>
+                    </p>
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-500">No sets logged</p>
+                <p className="text-gray-500 text-sm">No sets logged</p>
               )}
             </div>
           ))}
