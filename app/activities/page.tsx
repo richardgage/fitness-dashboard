@@ -121,7 +121,7 @@ export default function Home() {
     <div className="min-h-screen bg-gray-900">
       <div className="max-w-lg mx-auto">
         <div className="px-4 py-5 border-b border-gray-800">
-          <h1 className="text-2xl font-bold text-white mb-4">Feed</h1>
+          <h1 className="text-2xl font-bold text-white mb-4">Activities</h1>
           <button
             onClick={() => setShowFriends(!showFriends)}
             className="bg-blue-600 text-white px-5 py-2.5 rounded-lg font-semibold hover:bg-blue-700"
@@ -164,7 +164,7 @@ export default function Home() {
 
             {/* Invite a friend */}
             <div className="mb-6">
-              <h3 className="text-gray-400 text-sm uppercase tracking-wider mb-3">Invite a Friend</h3>
+              <h3 className="text-white font-bold text-sm uppercase tracking-wider mb-3">Add a Friend</h3>
               <div className="flex gap-2">
                 <input
                   type="email"

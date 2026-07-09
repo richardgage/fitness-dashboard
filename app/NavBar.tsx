@@ -11,7 +11,7 @@ export default function NavBar() {
     <nav className="bg-gray-800 border-b border-gray-700">
       <div className="max-w-6xl mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          <Link href="/" className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 text-xl font-bold hover:text-blue-400">
+          <Link href="/activities" className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 text-xl font-bold hover:text-blue-400">
             Stronger Together
           </Link>
 
@@ -27,7 +27,7 @@ export default function NavBar() {
           <div className="hidden md:flex gap-6 items-center">
             {session ? (
               <>
-                <Link href="/home" className="text-gray-300 hover:text-white transition-colors">Home</Link>
+                <Link href="/activities" className="text-gray-300 hover:text-white transition-colors">Activities</Link>
                 <Link href="/dashboard" className="text-gray-300 hover:text-white transition-colors">Visual Stats</Link>
                 <Link href="/gym/active" className="text-gray-300 hover:text-white transition-colors">Start Workout</Link>
                 <Link href="/gym/history" className="text-gray-300 hover:text-white transition-colors">Gym History</Link>
@@ -54,7 +54,7 @@ export default function NavBar() {
           <div className="md:hidden pb-4 space-y-2">
             {session ? (
               <>
-                <Link href="/home" onClick={() => setMenuOpen(false)} className="block text-gray-300 hover:text-white py-2 px-2">Home</Link>
+                <Link href="/activities" onClick={() => setMenuOpen(false)} className="block text-gray-300 hover:text-white py-2 px-2">Activities</Link>
                 <Link href="/dashboard" onClick={() => setMenuOpen(false)} className="block text-gray-300 hover:text-white py-2 px-2">Visual Stats</Link>
                 <Link href="/gym/active" onClick={() => setMenuOpen(false)} className="block text-gray-300 hover:text-white py-2 px-2">Start Workout</Link>
                 <Link href="/gym/history" onClick={() => setMenuOpen(false)} className="block text-gray-300 hover:text-white py-2 px-2">GymHistory</Link>
