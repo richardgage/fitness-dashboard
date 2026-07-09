@@ -1,6 +1,15 @@
 import Link from 'next/link'
+import { getServerSession } from 'next-auth'
+import { redirect } from 'next/navigation'
+import { authOptions } from '@/app/api/auth/[...nextauth]/authOptions'
 
-export default function Home() {
+export default async function Home() {
+  const session = await getServerSession(authOptions)
+
+  if (session) {
+    redirect('/welcome')
+  }
+
   return (
     <main className="min-h-screen bg-gray-900 relative overflow-hidden flex flex-col items-center justify-center px-6">
 
@@ -25,12 +34,12 @@ export default function Home() {
 
         {/* Title */}
         <h1 className="text-6xl text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-4 leading-tight tracking-tight">
-          Stronger Together<br />
+          Sets & Reps<br />
         </h1>
 
         {/* Subtitle */}
         <p className="text-gray-400 text-lg mb-4 leading-relaxed">
-          Track your lifts. Add your friends. Beat your records. <br className="hidden sm:block" />
+          Track your lifts. Beat your records. <br className="hidden sm:block" />
           Built for serious training.
         </p>
 
@@ -56,7 +65,7 @@ export default function Home() {
           </Link>
           <Link
             href="/login"
-            className="bg-green-600 hover:bg-green-500 text-white px-8 py-4 rounded-xl text-lg font-bold transition-colors"
+            className="bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white px-8 py-4 rounded-xl text-lg font-semibold transition-colors"
           >
             Log In
           </Link>
