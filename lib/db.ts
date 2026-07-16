@@ -334,9 +334,18 @@ export async function createUser(email: string, hashedPassword: string, displayN
 
 export async function getUserById(userId: number) {
   const result = await sql`
-    SELECT id, email, display_name FROM users WHERE id = ${userId}
+    SELECT id, email, display_name, default_rest_seconds FROM users WHERE id = ${userId}
   `
   return result.rows[0] || null
+}
+
+export async function updateDefaultRestTime(userId: number, seconds: number) {
+  const result = await sql`
+    UPDATE users SET default_rest_seconds = ${seconds}
+    WHERE id = ${userId}
+    RETURNING id, email, display_name, default_rest_seconds
+  `
+  return result.rows[0]
 }
 
 export async function updateDisplayName(userId: number, displayName: string) {
