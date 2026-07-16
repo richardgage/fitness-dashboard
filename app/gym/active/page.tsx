@@ -707,9 +707,6 @@ const endWorkout = async () => {
 
             {/* Add Set Form */}
             <div className="pb-4 mb-4 border-b border-gray-700">
-              <p className="text-white text-xl font-semibold mb-3">
-                {currentExercise.sets && currentExercise.sets.length > 0 ? 'Enter' : 'Log your lift below'}
-              </p>
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
                   <label className="block text-white text-m mb-2">Weight (lbs)</label>
@@ -718,7 +715,7 @@ const endWorkout = async () => {
                     value={weight}
                     onChange={(e) => setWeight(e.target.value)}
                     className="w-full p-3 rounded bg-gray-700 text-white text-lg"
-                    placeholder="135"
+                    placeholder="Enter Weight Here"
                     step="5"
                   />
                 </div>
@@ -729,7 +726,7 @@ const endWorkout = async () => {
                     value={reps}
                     onChange={(e) => setReps(e.target.value)}
                     className="w-full p-3 rounded bg-gray-700 text-white text-lg"
-                    placeholder="10"
+                    placeholder="Enter Reps Here"
                   />
                 </div>
               </div>
