@@ -486,7 +486,7 @@ const endWorkout = async () => {
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-4xl font-bold text-white">🏋️ Workout in Progress</h1>
+            <h1 className="text-xl sm:text-4xl font-bold text-white whitespace-nowrap">🏋️ Workout in Progress</h1>
             <p className="text-gray-400 mt-2">
               Started: {new Date(activeSession.start_time).toLocaleTimeString('en-US', { timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone })}
             </p>
@@ -502,19 +502,19 @@ const endWorkout = async () => {
 
         {/* Rest Timer */}
         {isResting && timeRemaining !== null && (
-          <div className="bg-gradient-to-br from-blue-900 to-blue-700 p-6 rounded-lg mb-6 text-center border-2 border-blue-500">
-            <p className="text-blue-200 text-sm mb-2">Rest Period</p>
-            <p className="text-white text-6xl font-bold mb-4">{formatTime(timeRemaining)}</p>
-            <div className="flex gap-4 justify-center">
+          <div className="bg-gradient-to-br from-blue-900 to-blue-700 p-4 sm:p-6 rounded-lg mb-6 text-center border-2 border-blue-500">
+            <p className="text-blue-200 text-xs sm:text-sm mb-1 sm:mb-2">Rest Period</p>
+            <p className="text-white text-4xl sm:text-6xl font-bold mb-3 sm:mb-4">{formatTime(timeRemaining)}</p>
+            <div className="flex gap-3 sm:gap-4 justify-center">
               <button
                 onClick={skipRest}
-                className="bg-white text-blue-900 px-6 py-2 rounded-lg font-semibold hover:bg-gray-100"
+                className="bg-white text-blue-900 px-5 py-2 sm:px-6 sm:py-2 rounded-lg font-semibold hover:bg-gray-100 text-sm sm:text-base"
               >
                 Skip Rest
               </button>
               <button
                 onClick={() => setTimeRemaining(timeRemaining + 30)}
-                className="bg-blue-800 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-900"
+                className="bg-blue-800 text-white px-5 py-2 sm:px-6 sm:py-2 rounded-lg font-semibold hover:bg-blue-900 text-sm sm:text-base"
               >
                 +30s
               </button>
