@@ -15,7 +15,9 @@ import {
   getUserIdByEmail,
   getExerciseProgression,
   getExerciseSummary,
-  getActivityFeed
+  getActivityFeed,
+  updateSet,
+  deleteSet
 } from '@/lib/db'
 import { authOptions } from '@/app/api/auth/[...nextauth]/authOptions'
 import {sql} from '@vercel/postgres'
@@ -136,6 +138,14 @@ export async function POST(request: Request) {
       return NextResponse.json(data)
     }
 
+    if (action === 'updateSet') {
+      const data = await updateSet(body.setId, userId, body.weight, body.reps)
+      if (!data) {
+        return NextResponse.json({ error: 'Set not found' }, { status: 404 })
+      }
+      return NextResponse.json(data)
+    }
+
     if (action === 'addExercise') {
       console.log('Adding exercise:', body.exerciseName, 'to session:', body.sessionId)
       const data = await addExerciseToSession(body.sessionId, body.exerciseName, body.order)
@@ -158,14 +168,23 @@ export async function DELETE(request: Request) {
 
   const { searchParams } = new URL(request.url)
   const sessionId = searchParams.get('sessionId')
-
-  if (!sessionId) {
-    return NextResponse.json({ error: 'No session ID provided' }, { status: 400 })
-  }
+  const setId = searchParams.get('setId')
 
   try {
-    await sql`DELETE FROM gym_sessions WHERE id = ${parseInt(sessionId)} AND user_id = ${userId}`
-    return NextResponse.json({ message: 'Workout deleted' })
+    if (setId) {
+      const deleted = await deleteSet(parseInt(setId), userId)
+      if (!deleted) {
+        return NextResponse.json({ error: 'Set not found' }, { status: 404 })
+      }
+      return NextResponse.json({ message: 'Set deleted' })
+    }
+
+    if (sessionId) {
+      await sql`DELETE FROM gym_sessions WHERE id = ${parseInt(sessionId)} AND user_id = ${userId}`
+      return NextResponse.json({ message: 'Workout deleted' })
+    }
+
+    return NextResponse.json({ error: 'No session ID or set ID provided' }, { status: 400 })
   } catch (error) {
     return NextResponse.json({ error: 'Database error' }, { status: 500 })
   }

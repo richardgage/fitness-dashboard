@@ -594,3 +594,32 @@ export async function getActivityFeed(userId: number, limit: number = 30, before
   `
   return result.rows
 }
+
+export async function updateSet(setId: number, userId: number, weight: number, reps: number) {
+  const result = await sql`
+    UPDATE gym_sets
+    SET weight = ${weight}, reps = ${reps}
+    WHERE id = ${setId}
+    AND exercise_id IN (
+      SELECT e.id FROM gym_exercises e
+      JOIN gym_sessions s ON e.session_id = s.id
+      WHERE s.user_id = ${userId}
+    )
+    RETURNING *
+  `
+  return result.rows[0] || null
+}
+
+export async function deleteSet(setId: number, userId: number) {
+  const result = await sql`
+    DELETE FROM gym_sets
+    WHERE id = ${setId}
+    AND exercise_id IN (
+      SELECT e.id FROM gym_exercises e
+      JOIN gym_sessions s ON e.session_id = s.id
+      WHERE s.user_id = ${userId}
+    )
+    RETURNING *
+  `
+  return result.rows[0] || null
+}

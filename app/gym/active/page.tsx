@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { ClipboardList, Dumbbell, XCircle, Pencil, Trash2, Check, X } from 'lucide-react'
 
 const COMMON_EXERCISES = [
   // Chest
@@ -96,7 +97,6 @@ const COMMON_EXERCISES = [
   'Sit-ups',
   'Russian Twists',
   'Hanging Leg Raise',
-  'Hanging Knee Raise',
   'Cable Crunch',
   'Ab Wheel Rollout',
   'Mountain Climbers',
@@ -133,6 +133,14 @@ export default function GymWorkout() {
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null)
   const [isResting, setIsResting] = useState(false)
   const [restTimeSelected, setRestTimeSelected] = useState(false)
+
+  // Which tab is showing — the exercise logging screen, or the workout summary
+  const [activeView, setActiveView] = useState<'exercise' | 'summary'>('exercise')
+
+  // Set editing state
+  const [editingSetId, setEditingSetId] = useState<number | null>(null)
+  const [editWeight, setEditWeight] = useState('')
+  const [editReps, setEditReps] = useState('')
 
   const checkActiveSession = async () => {
     try {
@@ -325,6 +333,67 @@ export default function GymWorkout() {
     }
   }
 
+  // Push an updated set list for the current exercise into both currentExercise and activeSession
+  const applySetsUpdate = (updatedSets: any[]) => {
+    const updatedExercise = { ...currentExercise, sets: updatedSets }
+    setCurrentExercise(updatedExercise)
+
+    const updatedExercises = activeSession.exercises.map((e: any) =>
+      e.exercise_name === currentExercise.exercise_name ? updatedExercise : e
+    )
+    setActiveSession({ ...activeSession, exercises: updatedExercises })
+  }
+
+  const startEditSet = (set: any) => {
+    setEditingSetId(set.id)
+    setEditWeight(String(set.weight))
+    setEditReps(String(set.reps))
+  }
+
+  const cancelEditSet = () => {
+    setEditingSetId(null)
+    setEditWeight('')
+    setEditReps('')
+  }
+
+  const saveEditSet = async (setId: number) => {
+    if (!editWeight || !editReps) return
+    try {
+      const response = await fetch('/api/gym', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'updateSet',
+          setId,
+          weight: parseFloat(editWeight),
+          reps: parseInt(editReps)
+        })
+      })
+      if (!response.ok) throw new Error('Failed to update set')
+
+      const updatedSets = currentExercise.sets.map((s: any) =>
+        s.id === setId ? { ...s, weight: parseFloat(editWeight), reps: parseInt(editReps) } : s
+      )
+      applySetsUpdate(updatedSets)
+      cancelEditSet()
+    } catch (error) {
+      console.error('Error updating set:', error)
+    }
+  }
+
+  const deleteSetHandler = async (setId: number) => {
+    if (!confirm('Delete this set?')) return
+    try {
+      const response = await fetch(`/api/gym?setId=${setId}`, { method: 'DELETE' })
+      if (!response.ok) throw new Error('Failed to delete set')
+
+      const updatedSets = currentExercise.sets.filter((s: any) => s.id !== setId)
+      applySetsUpdate(updatedSets)
+    } catch (error) {
+      console.error('Error deleting set:', error)
+    }
+  }
+
 const handleAddExercise = async () => {
   if (!newExerciseName.trim()) return
   
@@ -347,6 +416,7 @@ const handleAddExercise = async () => {
     setWeight('')
     setReps('')
     setLastWorkout(null)
+    cancelEditSet()
     skipRest() // Stop rest timer if running
   }
 
@@ -395,7 +465,7 @@ const endWorkout = async () => {
     return (
       <div className="min-h-screen bg-gray-900 p-8">
         <div className="max-w-2xl mx-auto">
-          <h1 className="text-4xl font-bold text-white text-center mb-8">Starting a Workout</h1>
+          <h1 className="text-4xl font-bold text-white text-center mb-8">Gym Workout</h1>
           <div className="bg-gray-800 p-8 rounded-lg text-center">
             <p className="text-gray-300 font-semibold mb-6">Click Below to Start Your Workout Timer</p>
             <button
@@ -421,9 +491,10 @@ const endWorkout = async () => {
               Started: {new Date(activeSession.start_time).toLocaleTimeString('en-US', { timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone })}
             </p>
           </div>
+          {/* On mobile, End Workout lives in the bottom bar instead — this stays for desktop */}
           <button
             onClick={endWorkout}
-            className="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700"
+            className="hidden md:block bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700"
           >
             End Workout
           </button>
@@ -451,12 +522,14 @@ const endWorkout = async () => {
           </div>
         )}
 
+        {activeView === 'exercise' && (
+          <>
         {/* No Exercise Selected - Show Exercise Selector */}
         {!currentExercise && (<>
           {!restTimeSelected ? (
             <div className="bg-gray-800 p-8 rounded-lg text-center mb-6">
               <h2 className="text-white text-xl font-bold mb-2">Set Default Rest Time</h2>
-              <p className="text-gray-400 text-sm mb-6">How long do you want to rest between sets?</p>
+              <p className="text-gray-400 text-sm mb-6">Enter how many minutes you want between sets:</p>
               <div className="flex flex-wrap gap-3 justify-center mb-6">{[
                 { seconds: 60, label: '60s' },
                 { seconds: 90, label: '90s' },
@@ -626,17 +699,70 @@ const endWorkout = async () => {
               </div>
             )}
 
-            {/* Today's Sets */}
+            {/* Today's Sets — editable */}
             {currentExercise.sets && currentExercise.sets.length > 0 && (
               <div className="mb-4">
                 <p className="text-gray-400 text-sm mb-2">Today's Sets:</p>
                 <div className="space-y-2">
                   {currentExercise.sets.map((set: any, idx: number) => (
-                    <div key={set.id || idx} className="bg-gray-700 p-3 rounded flex justify-between items-center">
-                      <span className="text-white">Set {set.set_number}</span>
-                      <span className="text-green-400 font-semibold">
-                        {set.weight} lbs × {set.reps} reps ✓
-                      </span>
+                    <div key={set.id || idx} className="bg-gray-700 p-3 rounded">
+                      {editingSetId === set.id ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-white flex-shrink-0">Set {set.set_number}</span>
+                          <input
+                            type="number"
+                            value={editWeight}
+                            onChange={(e) => setEditWeight(e.target.value)}
+                            className="w-20 p-2 rounded bg-gray-600 text-white text-center"
+                            placeholder="lbs"
+                          />
+                          <span className="text-gray-400">×</span>
+                          <input
+                            type="number"
+                            value={editReps}
+                            onChange={(e) => setEditReps(e.target.value)}
+                            className="w-16 p-2 rounded bg-gray-600 text-white text-center"
+                            placeholder="reps"
+                          />
+                          <button
+                            onClick={() => saveEditSet(set.id)}
+                            className="ml-auto bg-green-600 text-white p-2 rounded hover:bg-green-700"
+                            aria-label="Save"
+                          >
+                            <Check size={16} />
+                          </button>
+                          <button
+                            onClick={cancelEditSet}
+                            className="bg-gray-600 text-white p-2 rounded hover:bg-gray-500"
+                            aria-label="Cancel"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex justify-between items-center">
+                          <span className="text-white">Set {set.set_number}</span>
+                          <div className="flex items-center gap-3">
+                            <span className="text-green-400 font-semibold">
+                              {set.weight} lbs × {set.reps} reps ✓
+                            </span>
+                            <button
+                              onClick={() => startEditSet(set)}
+                              className="text-gray-400 hover:text-white p-1"
+                              aria-label="Edit set"
+                            >
+                              <Pencil size={16} />
+                            </button>
+                            <button
+                              onClick={() => deleteSetHandler(set.id)}
+                              className="text-gray-400 hover:text-red-400 p-1"
+                              aria-label="Delete set"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -681,11 +807,13 @@ const endWorkout = async () => {
             </div>
           </div>
         )}
+          </>
+        )}
 
-        {/* Workout Summary */}
-        {activeSession.exercises && activeSession.exercises.length > 0 && (
-          <div className="bg-gray-800 p-6 rounded-lg">
-            <h3 className="text-xl font-bold text-white mb-4">Today's Workout Summary</h3>
+        {activeView === 'summary' && (
+        <div className="bg-gray-800 p-6 rounded-lg">
+          <h3 className="text-xl font-bold text-white mb-4">Today's Workout Summary</h3>
+          {activeSession.exercises && activeSession.exercises.length > 0 ? (
             <div className="space-y-4">
               {activeSession.exercises.map((exercise: any, idx: number) => (
                 <div key={exercise.id || idx} className="border-b border-gray-700 pb-3 last:border-0">
@@ -704,20 +832,56 @@ const endWorkout = async () => {
                 </div>
               ))}
             </div>
+          ) : (
+            <p className="text-gray-500 text-sm">No exercises logged yet — head to the workout tab to get started.</p>
+          )}
 
-            {/* Workout Notes */}
-            <div className="mt-6">
-              <label className="block text-gray-400 text-sm mb-2">Workout Notes (optional)</label>
-              <textarea
-                value={workoutNotes}
-                onChange={(e) => setWorkoutNotes(e.target.value)}
-                className="w-full p-3 rounded bg-gray-700 text-white"
-                rows={3}
-                placeholder="How did the workout feel?"
-              />
-            </div>
+          {/* Workout Notes */}
+          <div className="mt-6">
+            <label className="block text-gray-400 text-sm mb-2">Workout Notes (optional)</label>
+            <textarea
+              value={workoutNotes}
+              onChange={(e) => setWorkoutNotes(e.target.value)}
+              className="w-full p-3 rounded bg-gray-700 text-white"
+              rows={3}
+              placeholder="How did the workout feel?"
+            />
           </div>
+        </div>
         )}
+      </div>
+
+      {/* Custom bottom bar for the active workout — replaces the standard mobile nav */}
+      <div
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-gray-800 border-t border-gray-700"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
+        <div className="flex items-center justify-around h-16">
+          <button
+            onClick={() => setActiveView('summary')}
+            className={`flex flex-col items-center gap-1 ${activeView === 'summary' ? 'text-blue-400' : 'text-gray-400'}`}
+          >
+            <ClipboardList size={22} />
+            <span className="text-[10px]">Summary</span>
+          </button>
+
+          <button
+            onClick={() => setActiveView('exercise')}
+            className="flex flex-col items-center -mt-6"
+          >
+            <div className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg border-4 border-gray-800 ${activeView === 'exercise' ? 'bg-green-600' : 'bg-green-700'}`}>
+              <Dumbbell size={24} className="text-white" />
+            </div>
+          </button>
+
+          <button
+            onClick={endWorkout}
+            className="flex flex-col items-center gap-1 text-red-400"
+          >
+            <XCircle size={22} />
+            <span className="text-[10px]">End Workout</span>
+          </button>
+        </div>
       </div>
     </div>
   )

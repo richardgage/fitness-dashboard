@@ -79,8 +79,8 @@ export default function NavBar() {
         </div>
       </nav>
 
-      {/* Mobile bottom nav — Strava-style, fixed, always visible */}
-      {session && (
+      {/* Mobile bottom nav — Strava-style, fixed, always visible (except during an active workout, which has its own bar) */}
+      {session && pathname !== '/gym/active' && (
         <div
           className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-gray-800 border-t border-gray-700"
           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
