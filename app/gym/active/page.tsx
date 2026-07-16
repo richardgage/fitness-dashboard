@@ -137,6 +137,9 @@ export default function GymWorkout() {
   // Which tab is showing — the exercise logging screen, or the workout summary
   const [activeView, setActiveView] = useState<'exercise' | 'summary'>('exercise')
 
+  // Running workout duration
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
+
   // Set editing state
   const [editingSetId, setEditingSetId] = useState<number | null>(null)
   const [editWeight, setEditWeight] = useState('')
@@ -164,6 +167,21 @@ export default function GymWorkout() {
     checkActiveSession()
     fetchUserExercises()
   }, [])
+
+  // Live-updating workout duration
+  useEffect(() => {
+    if (!activeSession?.start_time) return
+
+    const updateElapsed = () => {
+      const start = new Date(activeSession.start_time).getTime()
+      const now = Date.now()
+      setElapsedSeconds(Math.max(0, Math.floor((now - start) / 1000)))
+    }
+
+    updateElapsed()
+    const interval = setInterval(updateElapsed, 1000)
+    return () => clearInterval(interval)
+  }, [activeSession?.start_time])
 
   // Rest timer countdown
   useEffect(() => {
@@ -445,6 +463,16 @@ const endWorkout = async () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
+  const formatElapsed = (seconds: number) => {
+    const hrs = Math.floor(seconds / 3600)
+    const mins = Math.floor((seconds % 3600) / 60)
+    const secs = seconds % 60
+    if (hrs > 0) {
+      return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+    }
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
   const allExercises = [...COMMON_EXERCISES, ...customExercises]
     .filter((v, i, a) => a.indexOf(v) === i)
     .sort()
@@ -485,11 +513,11 @@ const endWorkout = async () => {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-xl sm:text-4xl font-bold text-white whitespace-nowrap">🏋️ Workout in Progress</h1>
-            <p className="text-gray-400 mt-2">
-              Started: {new Date(activeSession.start_time).toLocaleTimeString('en-US', { timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone })}
-            </p>
+          <div className="flex items-center gap-2 sm:gap-4">
+            <h1 className="text-base sm:text-4xl font-bold text-white whitespace-nowrap">🏋️ Workout in Progress</h1>
+            <span className="text-blue-400 text-base sm:text-2xl font-bold font-mono whitespace-nowrap">
+              {formatElapsed(elapsedSeconds)}
+            </span>
           </div>
           {/* On mobile, End Workout lives in the bottom bar instead — this stays for desktop */}
           <button
@@ -677,27 +705,42 @@ const endWorkout = async () => {
               </button>
             </div>
 
-            {/* Last Workout Info */}
-            {lastWorkout && (
-              <div className="bg-black border border-blue-500/40 p-4 rounded mb-2">
-                <p className="text-white text-xs font-semibold uppercase tracking-wider mb-3">
-                  Last Did This Exercise — {(() => {
-                    const days = Math.floor((new Date().getTime() - new Date(lastWorkout.date).getTime()) / (1000 * 60 * 60 * 24))
-                    if (days === 0) return 'Today'
-                    if (days === 1) return 'Yesterday'
-                    return `${days} days ago`
-                  })()}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {lastWorkout.sets && lastWorkout.sets.map((set: any, idx: number) => (
-                    <div key={idx} className="bg-blue-800/40 border border-blue-600/30 px-3 py-2 rounded-lg text-center">
-                      <p className="text-white font-bold text-lg">{set.weight} lbs</p>
-                      <p className="text-white text-xs">{set.reps} reps</p>
-                    </div>
-                  ))}
+            {/* Add Set Form */}
+            <div className="pb-4 mb-4 border-b border-gray-700">
+              <p className="text-white text-xl font-semibold mb-3">
+                {currentExercise.sets && currentExercise.sets.length > 0 ? 'Enter' : 'Log your lift below'}
+              </p>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-white text-m mb-2">Weight (lbs)</label>
+                  <input
+                    type="number"
+                    value={weight}
+                    onChange={(e) => setWeight(e.target.value)}
+                    className="w-full p-3 rounded bg-gray-700 text-white text-lg"
+                    placeholder="135"
+                    step="5"
+                  />
+                </div>
+                <div>
+                  <label className="block text-white text-m mb-2">Reps</label>
+                  <input
+                    type="number"
+                    value={reps}
+                    onChange={(e) => setReps(e.target.value)}
+                    className="w-full p-3 rounded bg-gray-700 text-white text-lg"
+                    placeholder="10"
+                  />
                 </div>
               </div>
-            )}
+              <button
+                onClick={addSet}
+                disabled={!weight || !reps}
+                className="w-full bg-blue-600 text-white py-4 rounded-lg text-lg font-semibold hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+              >
+                {currentExercise.sets && currentExercise.sets.length > 0 ? 'Do Another Set' : 'Log First Set'}
+              </button>
+            </div>
 
             {/* Today's Sets — editable */}
             {currentExercise.sets && currentExercise.sets.length > 0 && (
@@ -769,42 +812,27 @@ const endWorkout = async () => {
               </div>
             )}
 
-            {/* Add Set Form */}
-            <div className="border-t border-gray-700 pt-4">
-              <p className="text-white text-xl font-semibold mb-3">
-                {currentExercise.sets && currentExercise.sets.length > 0 ? 'Enter' : 'Log your lift below'}
-              </p>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="block text-white text-m mb-2">Weight (lbs)</label>
-                  <input
-                    type="number"
-                    value={weight}
-                    onChange={(e) => setWeight(e.target.value)}
-                    className="w-full p-3 rounded bg-gray-700 text-white text-lg"
-                    placeholder="135"
-                    step="5"
-                  />
-                </div>
-                <div>
-                  <label className="block text-white text-m mb-2">Reps</label>
-                  <input
-                    type="number"
-                    value={reps}
-                    onChange={(e) => setReps(e.target.value)}
-                    className="w-full p-3 rounded bg-gray-700 text-white text-lg"
-                    placeholder="10"
-                  />
+            {/* Last Workout Info */}
+            {lastWorkout && (
+              <div className="bg-black border border-blue-500/40 p-4 rounded">
+                <p className="text-white text-xs font-semibold uppercase tracking-wider mb-3">
+                  Last Did This Exercise — {(() => {
+                    const days = Math.floor((new Date().getTime() - new Date(lastWorkout.date).getTime()) / (1000 * 60 * 60 * 24))
+                    if (days === 0) return 'Today'
+                    if (days === 1) return 'Yesterday'
+                    return `${days} days ago`
+                  })()}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {lastWorkout.sets && lastWorkout.sets.map((set: any, idx: number) => (
+                    <div key={idx} className="bg-blue-800/40 border border-blue-600/30 px-3 py-2 rounded-lg text-center">
+                      <p className="text-white font-bold text-lg">{set.weight} lbs</p>
+                      <p className="text-white text-xs">{set.reps} reps</p>
+                    </div>
+                  ))}
                 </div>
               </div>
-              <button
-                onClick={addSet}
-                disabled={!weight || !reps}
-                className="w-full bg-blue-600 text-white py-4 rounded-lg text-lg font-semibold hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
-              >
-                {currentExercise.sets && currentExercise.sets.length > 0 ? 'Do Another Set' : 'Log First Set'}
-              </button>
-            </div>
+            )}
           </div>
         )}
           </>
